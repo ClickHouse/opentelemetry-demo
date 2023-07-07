@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@grpc/grpc-js": "1.6.7",
+    "@grpc/grpc-js": "1.8.17",
     "dotenv": "16.0.1",
     "dotenv-expand": "^8.0.3",
     "node-fetch": "2.6.7",

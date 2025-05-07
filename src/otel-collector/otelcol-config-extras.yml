@@ -28,9 +28,13 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, transform, batch]
       exporters: [clickhouse]
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [memory_limiter, transform, batch]
+      exporters: [clickhouse]
+    metrics:
+      receivers: [hostmetrics, docker_stats, httpcheck/frontend-proxy, otlp, redis, spanmetrics]
+      processors: [memory_limiter, batch]
       exporters: [clickhouse]

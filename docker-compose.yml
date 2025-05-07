@@ -696,28 +696,6 @@ services:
   # ********************
   # Telemetry Components
   # ********************
-  # Jaeger
-  jaeger:
-    image: ${JAEGERTRACING_IMAGE}
-    container_name: jaeger
-    command:
-      - "--memory.max-traces=25000"
-      - "--query.base-path=/jaeger/ui"
-      - "--prometheus.server-url=http://${PROMETHEUS_ADDR}"
-      - "--prometheus.query.normalize-calls=true"
-      - "--prometheus.query.normalize-duration=true"
-    deploy:
-      resources:
-        limits:
-          memory: 1200M
-    restart: unless-stopped
-    ports:
-      - "${JAEGER_PORT}"         # Jaeger UI
-      - "${OTEL_COLLECTOR_PORT_GRPC}"
-    environment:
-      - METRICS_STORAGE_TYPE=prometheus
-    logging: *logging
-
   # Grafana
   grafana:
     image: ${GRAFANA_IMAGE}
@@ -769,31 +747,6 @@ services:
       - OTEL_COLLECTOR_PORT_HTTP
       - GOMEMLIMIT=160MiB
 
-  # Prometheus
-  prometheus:
-    image: ${PROMETHEUS_IMAGE}
-    container_name: prometheus
-    command:
-      - --web.console.templates=/etc/prometheus/consoles
-      - --web.console.libraries=/etc/prometheus/console_libraries
-      - --storage.tsdb.retention.time=1h
-      - --config.file=/etc/prometheus/prometheus-config.yaml
-      - --storage.tsdb.path=/prometheus
-      - --web.enable-lifecycle
-      - --web.route-prefix=/
-      - --web.enable-otlp-receiver
-      - --enable-feature=exemplar-storage
-    volumes:
-      - ./src/prometheus/prometheus-config.yaml:/etc/prometheus/prometheus-config.yaml
-    deploy:
-      resources:
-        limits:
-          memory: 300M
-    restart: unless-stopped
-    ports:
-      - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
-    logging: *logging
-
   clickhouse:
     image: clickhouse/clickhouse-server:head
     container_name: clickhouse
@@ -804,38 +757,3 @@ services:
       nofile:
         soft: 262144
         hard: 262144
-  # OpenSearch
-  opensearch:
-    image: ${OPENSEARCH_IMAGE}
-    container_name: opensearch
-    deploy:
-      resources:
-        limits:
-          memory: 1.1G
-    restart: unless-stopped
-    environment:
-      - cluster.name=demo-cluster
-      - node.name=demo-node
-      - bootstrap.memory_lock=true
-      - discovery.type=single-node
-      - OPENSEARCH_JAVA_OPTS=-Xms300m -Xmx300m
-      - DISABLE_INSTALL_DEMO_CONFIG=true
-      - DISABLE_SECURITY_PLUGIN=true
-      # Workaround on OSX for https://bugs.openjdk.org/browse/JDK-8345296
-      - _JAVA_OPTIONS
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    ports:
-      - "9200"
-    healthcheck:
-      test: curl -s http://localhost:9200/_cluster/health | grep -E '"status":"(green|yellow)"'
-      start_period: 10s
-      interval: 5s
-      timeout: 10s
-      retries: 10
-    logging: *logging

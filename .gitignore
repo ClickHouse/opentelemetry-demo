@@ -34,7 +34,7 @@ composer.lock
 .venv
 .dockerhub.env
 .ghcr.env
-
+.volumes
 src/frontend/cypress/videos
 src/frontend/cypress/screenshots
 src/shipping/target/

@@ -710,77 +710,89 @@ services:
       - "${GRAFANA_PORT}"
     logging: *logging
 
-  # OpenTelemetry Collector
+  # HyperDX stack
+  db:
+    image: mongo:5.0.14-focal
+    container_name: hyperdx-db
+    volumes:
+      - .volumes/db:/data/db
+    ports:
+      - 27017:27017
+  
   otel-collector:
-    image: ${COLLECTOR_CONTRIB_IMAGE}
+    image: ${OTEL_COLLECTOR_HYPERDX_IMAGE_NAME}:${IMAGE_HYPERDX_VERSION}
     container_name: otel-collector
+    environment:
+      CLICKHOUSE_SERVER_ENDPOINT: clickhouse:9000
+      HYPERDX_LOG_LEVEL: ${HYPERDX_LOG_LEVEL}
+      ENVOY_PORT: ${ENVOY_PORT}
+      HOST_FILESYSTEM: ${HOST_FILESYSTEM}
+      OTEL_COLLECTOR_HOST: ${OTEL_COLLECTOR_HOST}
+      OTEL_COLLECTOR_PORT_GRPC: ${OTEL_COLLECTOR_PORT_GRPC}
+      OTEL_COLLECTOR_PORT_HTTP: ${OTEL_COLLECTOR_PORT_HTTP}
+      GOMEMLIMIT: 160MiB
+    ports:
+      - '13133:13133' # health_check extension
+      - '24225:24225' # fluentd receiver
+      - '4317:4317' # OTLP gRPC receiver
+      - '4318:4318' # OTLP http receiver
+      - '8888:8888' # metrics extension
+    restart: always
+    logging: *logging
     deploy:
       resources:
         limits:
           memory: 200M
-    restart: unless-stopped
-    command: [ "--config=/etc/otelcol-config.yml", "--config=/etc/otelcol-config-extras.yml" ]
+    command: [ "--config=/etc/otelcol-contrib/config.yaml", "--config=/etc/otelcol-contrib/config-extras.yaml" ]
     user: 0:0
     volumes:
       - ${HOST_FILESYSTEM}:/hostfs:ro
       - ${DOCKER_SOCK}:/var/run/docker.sock:ro
-      - ${OTEL_COLLECTOR_CONFIG}:/etc/otelcol-config.yml
-      - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-config-extras.yml
-    ports:
-      - "${OTEL_COLLECTOR_PORT_GRPC}"
-      - "${OTEL_COLLECTOR_PORT_HTTP}"
+      - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-contrib/config-extras.yaml   
     depends_on:
       clickhouse:
         condition: service_healthy
-    logging: *logging
-    environment:
-      - ENVOY_PORT
-      - HOST_FILESYSTEM
-      - OTEL_COLLECTOR_HOST
-      - OTEL_COLLECTOR_PORT_GRPC
-      - OTEL_COLLECTOR_PORT_HTTP
-      - GOMEMLIMIT=160MiB
 
-  # Prometheus
-  prometheus:
-    image: ${PROMETHEUS_IMAGE}
-    container_name: prometheus
-    command:
-      - --web.console.templates=/etc/prometheus/consoles
-      - --web.console.libraries=/etc/prometheus/console_libraries
-      - --storage.tsdb.retention.time=1h
-      - --config.file=/etc/prometheus/prometheus-config.yaml
-      - --storage.tsdb.path=/prometheus
-      - --web.enable-lifecycle
-      - --web.route-prefix=/
-      - --web.enable-otlp-receiver
-      - --enable-feature=exemplar-storage
-    volumes:
-      - ./src/prometheus/prometheus-config.yaml:/etc/prometheus/prometheus-config.yaml
-    deploy:
-      resources:
-        limits:
-          memory: 300M
-    restart: unless-stopped
+  hyperdx:
+    image: ${IMAGE_NAME_HDX}:${IMAGE_HYPERDX_VERSION}
+    container_name: hyperdx
     ports:
-      - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
-    logging: *logging
+      - ${HYPERDX_API_PORT}:${HYPERDX_API_PORT}
+      - ${HYPERDX_APP_PORT}:${HYPERDX_APP_PORT}
+    environment:
+      FRONTEND_URL: ${HYPERDX_APP_URL}:${HYPERDX_APP_PORT}
+      HYPERDX_API_KEY: ${HYPERDX_API_KEY}
+      HYPERDX_API_PORT: ${HYPERDX_API_PORT}
+      HYPERDX_APP_PORT: ${HYPERDX_APP_PORT}
+      HYPERDX_APP_URL: ${HYPERDX_APP_URL}
+      HYPERDX_LOG_LEVEL: ${HYPERDX_LOG_LEVEL}
+      MINER_API_URL: 'http://miner:5123'
+      MONGO_URI: 'mongodb://db:27017/hyperdx'
+      NEXT_PUBLIC_SERVER_URL: http://127.0.0.1:${HYPERDX_API_PORT}
+      OTEL_SERVICE_NAME: 'hdx-oss-api'
+      USAGE_STATS_ENABLED: ${USAGE_STATS_ENABLED:-true}
+    depends_on:
+      - clickhouse
+      - db
 
   clickhouse:
-    image: clickhouse/clickhouse-server:head
+    image: clickhouse/clickhouse-server:24-alpine
     container_name: clickhouse
     ports:
-      - "${CLICKHOUSE_NATIVE_PORT}:9000"
-      - "${CLICKHOUSE_HTTP_PORT}:8143"
-    ulimits:
-      nofile:
-        soft: 262144
-        hard: 262144
+      - 8123:8123 # http api
+      - 9000:9000 # native
     environment:
-      - CLICKHOUSE_SKIP_USER_SETUP=1
+      # default settings
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - ./src/clickhouse/config.xml:/etc/clickhouse-server/config.xml
+      - ./src/clickhouse/users.xml:/etc/clickhouse-server/users.xml
+      - .volumes/ch_data:/var/lib/clickhouse
+      - .volumes/ch_logs:/var/log/clickhouse-server
+    restart: on-failure
     healthcheck:
       test: wget --no-verbose --tries=1 http://127.0.0.1:8123/ping || exit 1
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      timeout: 10s
+      retries: 3
+

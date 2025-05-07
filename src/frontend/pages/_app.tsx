@@ -4,7 +4,6 @@
 import '../styles/globals.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App, { AppContext, AppProps } from 'next/app';
-import { getCookie } from 'cookies-next';
 import CurrencyProvider from '../providers/Currency.provider';
 import CartProvider from '../providers/Cart.provider';
 import { ThemeProvider } from 'styled-components';
@@ -26,8 +25,7 @@ declare global {
 }
 
 if (typeof window !== 'undefined') {
-  const collector = getCookie('otelCollectorUrl')?.toString() || '';
-  FrontendTracer(collector);
+  FrontendTracer();
   if (window.location) {
     const session = SessionGateway.getSession();
 
@@ -37,12 +35,19 @@ if (typeof window !== 'undefined') {
        * We connect to flagd through the envoy proxy, straight from the browser,
        * for this we need to know the current hostname and port.
        */
+
+      const useTLS = window.location.protocol === 'https:';
+      let port = useTLS ? 443 : 80;
+      if (window.location.port) {
+          port = parseInt(window.location.port, 10);
+      }
+
       OpenFeature.setProvider(
         new FlagdWebProvider({
           host: window.location.hostname,
           pathPrefix: 'flagservice',
-          port: window.location.port ? parseInt(window.location.port, 10) : 80,
-          tls: window.location.protocol === 'https:',
+          port: port,
+          tls: useTLS,
           maxRetries: 3,
           maxDelay: 10000,
         })

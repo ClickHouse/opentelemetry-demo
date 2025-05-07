@@ -338,8 +338,6 @@ services:
       - LOCUST_WEB_PORT
       - GRAFANA_PORT
       - GRAFANA_HOST
-      - JAEGER_PORT
-      - JAEGER_HOST
       - OTEL_COLLECTOR_HOST
       - IMAGE_PROVIDER_HOST
       - IMAGE_PROVIDER_PORT
@@ -356,8 +354,6 @@ services:
       frontend:
         condition: service_started
       load-generator:
-        condition: service_started
-      jaeger:
         condition: service_started
       grafana:
         condition: service_started
@@ -706,7 +702,7 @@ services:
           memory: 120M
     restart: unless-stopped
     environment:
-      - "GF_INSTALL_PLUGINS=grafana-opensearch-datasource,grafana-clickhouse-datasource"
+      - "GF_INSTALL_PLUGINS=grafana-clickhouse-datasource"
     volumes:
       - ./src/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./src/grafana/provisioning/:/etc/grafana/provisioning/
@@ -734,9 +730,7 @@ services:
       - "${OTEL_COLLECTOR_PORT_GRPC}"
       - "${OTEL_COLLECTOR_PORT_HTTP}"
     depends_on:
-      jaeger:
-        condition: service_started
-      opensearch:
+      clickhouse:
         condition: service_healthy
     logging: *logging
     environment:
@@ -782,3 +776,11 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+    healthcheck:
+      test: wget --no-verbose --tries=1 http://127.0.0.1:8123/ping || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

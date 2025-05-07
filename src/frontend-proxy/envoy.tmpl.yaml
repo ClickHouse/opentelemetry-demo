@@ -41,8 +41,6 @@ static_resources:
                           route: { cluster: loadgen, prefix_rewrite: "/" }
                         - match: { prefix: "/otlp-http/" }
                           route: { cluster: opentelemetry_collector_http, prefix_rewrite: "/" }
-                        - match: { prefix: "/jaeger" }
-                          route: { cluster: jaeger }
                         - match: { prefix: "/grafana" }
                           route: { cluster: grafana }
                         - match: { prefix: "/images/" }
@@ -220,18 +218,6 @@ static_resources:
                     socket_address:
                       address: ${GRAFANA_HOST}
                       port_value: ${GRAFANA_PORT}
-    - name: jaeger
-      type: STRICT_DNS
-      lb_policy: ROUND_ROBIN
-      load_assignment:
-        cluster_name: jaeger
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: ${JAEGER_HOST}
-                      port_value: ${JAEGER_PORT}
 admin:
   address:
     socket_address:

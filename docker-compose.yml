@@ -331,6 +331,8 @@ services:
     ports:
       - "${ENVOY_PORT}:${ENVOY_PORT}"
       - 10000:10000
+    volumes:
+      - ./src/frontend-proxy/envoy.tmpl.yaml:/home/envoy/envoy.tmpl.yaml
     environment:
       - FRONTEND_PORT
       - FRONTEND_HOST

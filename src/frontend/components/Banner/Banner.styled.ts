@@ -4,6 +4,8 @@
 import styled from 'styled-components';
 import Button from '../Button';
 
+
+
 export const Banner = styled.div`
   display: flex;
   flex-direction: column;
@@ -15,9 +17,13 @@ export const Banner = styled.div`
   }
 `;
 
-export const BannerImg = styled.img.attrs({
-  src: `${process.env.IMAGE_BASE_URL}/images/Banner.png`,
-})`
+interface BannerImgProps {
+  baseUrl: string;
+}
+
+export const BannerImg = styled.img.attrs<BannerImgProps>(props => ({
+  src: `${props.baseUrl}/images/Banner.png`,
+}))<BannerImgProps>`
   width: 100%;
   height: auto;
 `;

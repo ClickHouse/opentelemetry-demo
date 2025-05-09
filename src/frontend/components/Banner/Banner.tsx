@@ -4,11 +4,16 @@
 import Link from 'next/link';
 import * as S from './Banner.styled';
 
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
+
 const Banner = () => {
   return (
     <S.Banner>
       <S.ImageContainer>
-        <S.BannerImg />
+        <S.BannerImg baseUrl={IMAGE_BASE_URL || ''}/>
       </S.ImageContainer>
       <S.TextContainer>
         <S.Title>The best telescopes to see the world closer</S.Title>

@@ -17,9 +17,10 @@ interface IProps {
 //   return await res.blob();
 // }
 
-const {
-  IMAGE_BASE_URL
-} = typeof window !== 'undefined' ? window.ENV : {};
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
 
 const ProductCard = ({
   product: {

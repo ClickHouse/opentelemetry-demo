@@ -56,3 +56,4 @@ export const Arrow = styled.img.attrs<ArrowProps>(props => ({
   height: 5px;
   top: 64px;
 `;
+

@@ -21,7 +21,7 @@ const CartIcon = () => {
   return (
     <>
       <S.CartIcon data-cy={CypressFields.CartIcon} onClick={() => setIsOpen(true)}>
-        <S.Icon src={`${IMAGE_BASE_URL}/icons/CartIcon.svg`} alt="Cart icon" title="Cart" />
+        <S.Icon src={`${IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'}/icons/CartIcon.svg`} alt="Cart icon" title="Cart" />
         {!!items.length && <S.ItemsCount data-cy={CypressFields.CartItemCount}>{items.length}</S.ItemsCount>}
       </S.CartIcon>
       <CartDropdown productList={items} isOpen={isOpen} onClose={() => setIsOpen(false)} />

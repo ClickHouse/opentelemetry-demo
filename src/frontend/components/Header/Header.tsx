@@ -17,7 +17,7 @@ const Header = () => {
       <S.NavBar>
         <S.Container>
           <S.NavBarBrand href="/">
-            <S.BrandImg baseUrl={IMAGE_BASE_URL || ''} />
+            <S.BrandImg baseUrl={IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'} />
           </S.NavBarBrand>
           <S.Controls>
             <CurrencySwitcher />

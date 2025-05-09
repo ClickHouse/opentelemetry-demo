@@ -24,7 +24,7 @@ const Input = ({ type, id = '', children, label, ...props }: IProps) => {
           <S.Select id={id} {...props}>
             {children}
           </S.Select>
-          <S.Arrow baseUrl={IMAGE_BASE_URL || ''} />
+          <S.Arrow baseUrl={IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'} />
         </>
       ) : (
         <S.Input id={id} {...props} type={type} />

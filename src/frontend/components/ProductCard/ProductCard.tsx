@@ -56,7 +56,7 @@ const ProductCard = ({
   return (
     <S.Link href={`/product/${id}`}>
       <S.ProductCard data-cy={CypressFields.ProductCard}>
-        <S.Image $src={`${IMAGE_BASE_URL}/images/products/` + picture} />
+        <S.Image $src={`${IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'}/images/products/` + picture} />
         <div>
           <S.ProductName>{name}</S.ProductName>
           <S.ProductPrice>

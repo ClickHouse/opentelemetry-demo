@@ -33,7 +33,7 @@ const CurrencySwitcher = () => {
             </option>
           ))}
         </S.Select>
-        <S.Arrow baseUrl={IMAGE_BASE_URL || ''} />
+        <S.Arrow baseUrl={IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'} />
       </S.Container>
     </S.CurrencySwitcher>
   );

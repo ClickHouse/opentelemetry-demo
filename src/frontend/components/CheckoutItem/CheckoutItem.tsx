@@ -34,7 +34,7 @@ const CheckoutItem = ({
   return (
     <S.CheckoutItem data-cy={CypressFields.CheckoutItem}>
       <S.ItemDetails>
-        <S.ItemImage src={`${IMAGE_BASE_URL}/images/products/` + picture} alt={name}/>
+        <S.ItemImage src={`${IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'}/images/products/` + picture} alt={name}/>
         <S.Details>
           <S.ItemName>{name}</S.ItemName>
           <p>Quantity: {quantity}</p>
@@ -57,7 +57,7 @@ const CheckoutItem = ({
         )}
       </S.ShippingData>
       <S.Status>
-        <Image src={`${IMAGE_BASE_URL}/icons/Check.svg`} alt="check" height="14" width="16" /> <span>Done</span>
+        <Image src={`${IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'}/icons/Check.svg`} alt="check" height="14" width="16" /> <span>Done</span>
       </S.Status>
     </S.CheckoutItem>
   );

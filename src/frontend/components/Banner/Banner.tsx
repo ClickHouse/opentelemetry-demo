@@ -13,7 +13,7 @@ const Banner = () => {
   return (
     <S.Banner>
       <S.ImageContainer>
-        <S.BannerImg baseUrl={IMAGE_BASE_URL || ''}/>
+        <S.BannerImg baseUrl={IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'}/>
       </S.ImageContainer>
       <S.TextContainer>
         <S.Title>The best telescopes to see the world closer</S.Title>

@@ -24,7 +24,7 @@ const CartItem = ({
     <S.CartItem>
       <Link href={`/product/${id}`}>
         <S.NameContainer>
-          <S.CartItemImage alt={name} src={`${IMAGE_BASE_URL}/images/products/` + picture} />
+          <S.CartItemImage alt={name} src={`${IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'}/images/products/` + picture} />
           <p>{name}</p>
         </S.NameContainer>
       </Link>

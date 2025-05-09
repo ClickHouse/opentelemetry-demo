@@ -1,0 +1,14 @@
+config:
+  target: "http://localhost"  # dummy value
+  phases:
+    - arrivalCount: ${ARRIVAL_COUNT}
+      duration: ${DURATION}
+  engines:
+    playwright:
+      launchOptions:
+        headless: true
+  processor: flows.js
+
+scenarios:
+  - engine: playwright
+    testFunction: simulateUser

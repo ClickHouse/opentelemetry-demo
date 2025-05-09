@@ -11,6 +11,10 @@ interface IProps {
   quantity: number;
 }
 
+const {
+  IMAGE_BASE_URL
+} = typeof window !== 'undefined' ? window.ENV : {};
+
 const CartItem = ({
   product: { id, name, picture, priceUsd = { units: 0, nanos: 0, currencyCode: 'USD' } },
   quantity,
@@ -19,7 +23,7 @@ const CartItem = ({
     <S.CartItem>
       <Link href={`/product/${id}`}>
         <S.NameContainer>
-          <S.CartItemImage alt={name} src={"/images/products/" + picture} />
+          <S.CartItemImage alt={name} src={`${IMAGE_BASE_URL}/images/products/` + picture} />
           <p>{name}</p>
         </S.NameContainer>
       </Link>

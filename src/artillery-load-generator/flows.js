@@ -99,8 +99,10 @@ async function simulateUser(page) {
     await page.selectOption('#credit_card_expiration_month', `${faker.number.int({ min: 1, max: 12 })}`);
     await randomDelay(min=500, max=1000);
     await page.selectOption('#credit_card_expiration_year', `${faker.number.int({ min: 2025, max: 2030 })}`);
-    await randomDelay(min=500, max=1000);
-    await page.fill('#credit_card_cvv', `${faker.number.int({ min: 100, max: 999 })}`);
+    if (Math.random() < 0.5) {
+        await randomDelay(min=500, max=1000);
+        await page.fill('#credit_card_cvv', `${faker.number.int({ min: 100, max: 999 })}`);
+    }
     await randomDelay(min=500, max=700);
     // Place the order
     await page.click('[data-cy="checkout-place-order"]');

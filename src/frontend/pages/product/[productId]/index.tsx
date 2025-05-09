@@ -23,6 +23,10 @@ import { useCurrency } from '../../../providers/Currency.provider';
 
 const quantityOptions = new Array(10).fill(0).map((_, i) => i + 1);
 
+const {
+  IMAGE_BASE_URL
+} = typeof window !== 'undefined' ? window.ENV : {};
+
 const ProductDetail: NextPage = () => {
   const { push, query } = useRouter();
   const [quantity, setQuantity] = useState(1);
@@ -71,7 +75,7 @@ const ProductDetail: NextPage = () => {
       <Layout>
         <S.ProductDetail data-cy={CypressFields.ProductDetail}>
           <S.Container>
-            <S.Image $src={"/images/products/" + picture} data-cy={CypressFields.ProductPicture} />
+            <S.Image $src={`${IMAGE_BASE_URL}/images/products/` + picture} data-cy={CypressFields.ProductPicture} />
             <S.Details>
               <S.Name data-cy={CypressFields.ProductName}>{name}</S.Name>
               <S.Description data-cy={CypressFields.ProductDescription}>{description}</S.Description>

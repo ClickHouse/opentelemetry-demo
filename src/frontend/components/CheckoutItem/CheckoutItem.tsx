@@ -14,6 +14,10 @@ interface IProps {
   address: Address;
 }
 
+const {
+  IMAGE_BASE_URL
+} = typeof window !== 'undefined' ? window.ENV : {};
+
 const CheckoutItem = ({
   checkoutItem: {
     item: {
@@ -29,7 +33,7 @@ const CheckoutItem = ({
   return (
     <S.CheckoutItem data-cy={CypressFields.CheckoutItem}>
       <S.ItemDetails>
-        <S.ItemImage src={"/images/products/" + picture} alt={name}/>
+        <S.ItemImage src={`${IMAGE_BASE_URL}/images/products/` + picture} alt={name}/>
         <S.Details>
           <S.ItemName>{name}</S.ItemName>
           <p>Quantity: {quantity}</p>

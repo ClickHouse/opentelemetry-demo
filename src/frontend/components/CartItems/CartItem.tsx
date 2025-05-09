@@ -11,9 +11,10 @@ interface IProps {
   quantity: number;
 }
 
-const {
-  IMAGE_BASE_URL
-} = typeof window !== 'undefined' ? window.ENV : {};
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
 
 const CartItem = ({
   product: { id, name, picture, priceUsd = { units: 0, nanos: 0, currencyCode: 'USD' } },

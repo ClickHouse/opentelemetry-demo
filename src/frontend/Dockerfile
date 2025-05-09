@@ -4,8 +4,6 @@
 FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat
 
-USER node
-
 WORKDIR /app
 
 COPY ./src/frontend/package*.json ./
@@ -13,6 +11,7 @@ RUN npm clean-install --no-audit --no-progress
 COPY ./src/frontend/protos ./protos
 COPY ./src/frontend .
 
+# Use root for the build to avoid permission issues
 RUN npm run build
 
 FROM node:22-alpine AS deps
@@ -20,7 +19,7 @@ FROM node:22-alpine AS deps
 USER node
 
 WORKDIR /app
-COPY --chown=node:node --from=builder /home/node/.npm/ /home/node/.npm/
+#COPY --chown=node:node --from=builder /home/node/.npm/ /home/node/.npm/
 COPY ./src/frontend/package*.json ./
 RUN NODE_ENV=production npm clean-install --prefer-offline --no-audit --no-progress
 

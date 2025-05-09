@@ -14,9 +14,10 @@ interface IProps {
   productList: IProductCartItem[];
 }
 
-const {
-  IMAGE_BASE_URL
-} = typeof window !== 'undefined' ? window.ENV : {};
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
 
 const CartDropdown = ({ productList, isOpen, onClose }: IProps) => {
   const ref = useRef<HTMLDivElement>(null);

@@ -10,6 +10,11 @@ interface IProps extends InputHTMLAttributes<HTMLSelectElement | HTMLInputElemen
   label: string;
 }
 
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
+
 const Input = ({ type, id = '', children, label, ...props }: IProps) => {
   return (
     <S.InputRow>
@@ -19,7 +24,7 @@ const Input = ({ type, id = '', children, label, ...props }: IProps) => {
           <S.Select id={id} {...props}>
             {children}
           </S.Select>
-          <S.Arrow />
+          <S.Arrow baseUrl={IMAGE_BASE_URL || ''} />
         </>
       ) : (
         <S.Input id={id} {...props} type={type} />

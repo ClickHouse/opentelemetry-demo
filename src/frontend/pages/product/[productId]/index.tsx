@@ -23,9 +23,10 @@ import { useCurrency } from '../../../providers/Currency.provider';
 
 const quantityOptions = new Array(10).fill(0).map((_, i) => i + 1);
 
-const {
-  IMAGE_BASE_URL
-} = typeof window !== 'undefined' ? window.ENV : {};
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
 
 const ProductDetail: NextPage = () => {
   const { push, query } = useRouter();
@@ -95,7 +96,7 @@ const ProductDetail: NextPage = () => {
                 ))}
               </Select>
               <S.AddToCart data-cy={CypressFields.ProductAddToCart} onClick={onAddItem}>
-                <Image src="/icons/Cart.svg" height="15" width="15" alt="cart" /> Add To Cart
+                <Image src={`${IMAGE_BASE_URL}/icons/Cart.svg`} height="15" width="15" alt="cart" /> Add To Cart
               </S.AddToCart>
             </S.Details>
           </S.Container>

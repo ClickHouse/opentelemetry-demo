@@ -5,13 +5,19 @@ import CartIcon from '../CartIcon';
 import CurrencySwitcher from '../CurrencySwitcher';
 import * as S from './Header.styled';
 
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
+
+
 const Header = () => {
   return (
     <S.Header>
       <S.NavBar>
         <S.Container>
           <S.NavBarBrand href="/">
-            <S.BrandImg />
+            <S.BrandImg baseUrl={IMAGE_BASE_URL || ''} />
           </S.NavBarBrand>
           <S.Controls>
             <CurrencySwitcher />

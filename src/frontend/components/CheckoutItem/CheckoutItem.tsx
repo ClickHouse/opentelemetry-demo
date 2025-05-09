@@ -14,9 +14,10 @@ interface IProps {
   address: Address;
 }
 
-const {
-  IMAGE_BASE_URL
-} = typeof window !== 'undefined' ? window.ENV : {};
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
 
 const CheckoutItem = ({
   checkoutItem: {
@@ -56,7 +57,7 @@ const CheckoutItem = ({
         )}
       </S.ShippingData>
       <S.Status>
-        <Image src="/icons/Check.svg" alt="check" height="14" width="16" /> <span>Done</span>
+        <Image src={`${IMAGE_BASE_URL}/icons/Check.svg`} alt="check" height="14" width="16" /> <span>Done</span>
       </S.Status>
     </S.CheckoutItem>
   );

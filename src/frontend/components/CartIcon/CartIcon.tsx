@@ -7,6 +7,11 @@ import { useCart } from '../../providers/Cart.provider';
 import CartDropdown from '../CartDropdown';
 import * as S from './CartIcon.styled';
 
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
+
 const CartIcon = () => {
   const [isOpen, setIsOpen] = useState(false);
   const {
@@ -16,7 +21,7 @@ const CartIcon = () => {
   return (
     <>
       <S.CartIcon data-cy={CypressFields.CartIcon} onClick={() => setIsOpen(true)}>
-        <S.Icon src="/icons/CartIcon.svg" alt="Cart icon" title="Cart" />
+        <S.Icon src={`${IMAGE_BASE_URL}/icons/CartIcon.svg`} alt="Cart icon" title="Cart" />
         {!!items.length && <S.ItemsCount data-cy={CypressFields.CartItemCount}>{items.length}</S.ItemsCount>}
       </S.CartIcon>
       <CartDropdown productList={items} isOpen={isOpen} onClose={() => setIsOpen(false)} />

@@ -413,7 +413,7 @@ services:
       - LOCUST_HOST
       - LOCUST_HEADLESS
       - LOCUST_AUTOSTART
-      - LOCUST_BROWSER_TRAFFIC_ENABLED=true
+      - LOCUST_BROWSER_TRAFFIC_ENABLED=false
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
@@ -798,17 +798,17 @@ services:
       interval: 10s
       timeout: 10s
       retries: 3
-  # artillery-loadgen:
-  #   image: my-artillery-test:latest
-  #   container_name: artillery-loadgen
-  #   build:
-  #     context: ./src/artillery-load-generator  # Update to correct path
-  #     dockerfile: Dockerfile
-  #   restart: always
-  #   environment:
-  #     - DEMO_URL=http://frontend:8080
-  #     - ARRIVAL_COUNT=5
-  #     - DURATION=60
-  #   depends_on:
-  #     frontend:
-  #       condition: service_started
+  artillery-loadgen:
+    image: my-artillery-test:latest
+    container_name: artillery-loadgen
+    build:
+      context: ./src/artillery-load-generator  # Update to correct path
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - DEMO_URL=http://frontend:8080
+      - ARRIVAL_COUNT=5
+      - DURATION=60
+    depends_on:
+      frontend:
+        condition: service_started

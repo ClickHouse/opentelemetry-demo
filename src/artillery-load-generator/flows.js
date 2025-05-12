@@ -12,32 +12,30 @@ function formatCardNumber(number) {
 }
 
 function generateValidVisaNumber() {
-    const prefix = '4';
-    let number = prefix;
-
-    // Generate 14 random digits (for a total of 15 with prefix)
+    let number = '4';
     for (let i = 0; i < 14; i++) {
-        number += Math.floor(Math.random() * 10);
+      number += Math.floor(Math.random() * 10);
     }
-
-    // Compute and append Luhn check digit to make 16 digits
     const checkDigit = getLuhnCheckDigit(number);
-    const fullCardNumber = number + checkDigit;
-
-    return formatCardNumber(fullCardNumber); // optional dashes: "####-####-####-####"
+    return formatCardNumber(number + checkDigit);
 }
 
 function getLuhnCheckDigit(number) {
-    const digits = number.split('').map(Number).reverse();
-    const sum = digits.reduce((acc, digit, idx) => {
-        if (idx % 2 === 0) return acc + digit;
-        const dbl = digit * 2;
-        return acc + (dbl > 9 ? dbl - 9 : dbl);
-    }, 0);
+    const digits = number.split('').map(Number);
+    let sum = 0;
+  
+    for (let i = 0; i < digits.length; i++) {
+      let digit = digits[i];
+      if (i % 2 === 0) {  // even index from the left for 16-digit numbers
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      sum += digit;
+    }
+  
     const mod = sum % 10;
     return mod === 0 ? '0' : (10 - mod).toString();
 }
-
 
 async function simulateUser(page) {
   const baseUrl = process.env.DEMO_URL || 'http://localhost:8080';
@@ -99,10 +97,8 @@ async function simulateUser(page) {
     await page.selectOption('#credit_card_expiration_month', `${faker.number.int({ min: 1, max: 12 })}`);
     await randomDelay(min=500, max=1000);
     await page.selectOption('#credit_card_expiration_year', `${faker.number.int({ min: 2025, max: 2030 })}`);
-    if (Math.random() < 0.5) {
-        await randomDelay(min=500, max=1000);
-        await page.fill('#credit_card_cvv', `${faker.number.int({ min: 100, max: 999 })}`);
-    }
+    await randomDelay(min=500, max=1000);
+    await page.fill('#credit_card_cvv', `${faker.number.int({ min: 100, max: 999 })}`);
     await randomDelay(min=500, max=700);
     // Place the order
     await page.click('[data-cy="checkout-place-order"]');

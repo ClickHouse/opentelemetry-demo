@@ -1,7 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 const { context, propagation, trace, metrics } = require('@opentelemetry/api');
-const cardValidator = require('simple-card-validator');
 const { v4: uuidv4 } = require('uuid');
 
 const { OpenFeature } = require('@openfeature/server-sdk');
@@ -15,6 +14,49 @@ const transactionsCounter = meter.createCounter('app.payment.transactions');
 
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
 
+// Custom credit card validator with unbounded cache (deliberate memory leak)
+const cardValidationCache = [];
+
+function isValidCardNumber(cardNumber) {
+  const sanitized = cardNumber.replace(/\D/g, '');
+  if (!/^4\d{15}$/.test(sanitized)) return false;
+
+  const digits = sanitized.split('').map(Number);
+  let sum = 0;
+
+  for (let i = 0; i < digits.length; i++) {
+    let digit = digits[i];
+    if (i % 2 === 0) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+  }
+
+  return sum % 10 === 0;
+}
+
+function validateCreditCard(number, cache) {
+  // Check cache first
+  const cachedResult = cardValidationCache.find(entry => entry.number === number);
+  if (cachedResult) {
+    return cachedResult.result;
+  }
+
+  // Validate card using Luhn algorithm
+  const isValid = isValidCardNumber(number);
+  const cardType = number.startsWith('4') ? 'visa' : 'unknown';
+
+  const result = { card_type: cardType, valid: isValid };
+
+  if (cache) {
+    // Cache the result (unbounded growth)
+    cardValidationCache.push({ number, result });
+  }
+
+  return result;
+}
+
 /** Return random element from given array */
 function random(arr) {
   const index = Math.floor(Math.random() * arr.length);
@@ -26,7 +68,8 @@ module.exports.charge = async request => {
 
   await OpenFeature.setProviderAndWait(flagProvider);
 
-  const numberVariant =  await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
+  const numberVariant = await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
+  const cacheEnabled = await OpenFeature.getClient().getBooleanValue("paymentCacheLeak", false);
 
   if (numberVariant > 0) {
     // n% chance to fail with app.loyalty.level=gold
@@ -47,9 +90,9 @@ module.exports.charge = async request => {
   const currentYear = new Date().getFullYear();
   const lastFourDigits = number.substr(-4);
   const transactionId = uuidv4();
-
-  const card = cardValidator(number);
-  const { card_type: cardType, valid } = card.getCardDetails();
+    
+  // Use custom validator with cache based on flag
+  const { card_type: cardType, valid } = validateCreditCard(number, cacheEnabled);
 
   const loyalty_level = random(LOYALTY_LEVEL);
 

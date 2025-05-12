@@ -85,7 +85,7 @@
         "on": true,
         "off": false
       },
-      "defaultVariant": "off"
+      "defaultVariant": "on"
     },
     "paymentUnreachable": {
       "description": "Payment service is unavailable",

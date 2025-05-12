@@ -52,6 +52,7 @@ function validateCreditCard(number, cache) {
   if (cache) {
     // Cache the result (unbounded growth)
     cardValidationCache.push({ number, result });
+    console.log(`cache length: ${cardValidationCache.length}`)
   }
 
   return result;

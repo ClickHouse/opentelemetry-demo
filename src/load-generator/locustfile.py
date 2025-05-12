@@ -9,6 +9,7 @@ import os
 import random
 import uuid
 import logging
+import re
 
 from locust import HttpUser, task, between
 from locust_plugins.users.playwright import PlaywrightUser, pw, PageWithRetry, event
@@ -104,6 +105,31 @@ products = [
 people_file = open('people.json')
 people = json.load(people_file)
 
+
+def format_card_number(number: str) -> str:
+    return re.sub(r'(\d{4})(?=\d)', r'\1-', number)
+
+def get_luhn_check_digit(number: str) -> str:
+    digits = [int(d) for d in number]
+    total = 0
+
+    for i, digit in enumerate(digits):
+        if i % 2 == 0:  # even index from left for 16-digit numbers
+            digit *= 2
+            if digit > 9:
+                digit -= 9
+        total += digit
+
+    mod = total % 10
+    return '0' if mod == 0 else str(10 - mod)
+
+def generate_valid_visa_number() -> str:
+    number = '4'
+    for _ in range(14):
+        number += str(random.randint(0, 9))
+    check_digit = get_luhn_check_digit(number)
+    return format_card_number(number + check_digit)
+
 class WebsiteUser(HttpUser):
     wait_time = between(1, 10)
 
@@ -155,6 +181,8 @@ class WebsiteUser(HttpUser):
         self.add_to_cart(user=user)
         checkout_person = random.choice(people)
         checkout_person["userId"] = user
+        # generate a valid credit card number
+        checkout_person["creditCard"]["creditCardNumber"] = self.generate_credit_card()
         self.client.post("/api/checkout", json=checkout_person)
 
     @task(1)

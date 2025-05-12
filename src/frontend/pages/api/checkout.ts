@@ -7,6 +7,7 @@ import CheckoutGateway from '../../gateways/rpc/Checkout.gateway';
 import { Empty, PlaceOrderRequest } from '../../protos/demo';
 import { IProductCheckoutItem, IProductCheckout } from '../../types/Cart';
 import ProductCatalogService from '../../services/ProductCatalog.service';
+import * as HyperDX from '@hyperdx/node-opentelemetry';
 
 type TResponse = IProductCheckout | Empty;
 
@@ -15,6 +16,10 @@ const handler = async ({ method, body, query }: NextApiRequest, res: NextApiResp
     case 'POST': {
       const { currencyCode = '' } = query;
       const orderData = body as PlaceOrderRequest;
+      HyperDX.setTraceAttributes({
+        userId: orderData.userId,
+        email: orderData.email,
+      });
       const { order: { items = [], ...order } = {} } = await CheckoutGateway.placeOrder(orderData);
 
       const productList: IProductCheckoutItem[] = await Promise.all(

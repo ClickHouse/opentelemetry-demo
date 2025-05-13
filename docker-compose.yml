@@ -800,7 +800,7 @@ services:
       timeout: 10s
       retries: 3
   artillery-loadgen:
-    image: my-artillery-test:latest
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-artillery
     container_name: artillery-loadgen
     build:
       context: ./src/artillery-load-generator  # Update to correct path

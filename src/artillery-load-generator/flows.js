@@ -20,13 +20,13 @@ function generateValidVisaNumber() {
     return formatCardNumber(number + checkDigit);
 }
 
-function getLuhnCheckDigit(number) {
-    const digits = number.split('').map(Number);
+function getLuhnCheckDigit(numberWithoutCheckDigit) {
+    const digits = (numberWithoutCheckDigit + '0').split('').reverse().map(Number); // pad with '0' to simulate check digit
     let sum = 0;
   
     for (let i = 0; i < digits.length; i++) {
       let digit = digits[i];
-      if (i % 2 === 0) {  // even index from the left for 16-digit numbers
+      if (i % 2 === 1) { // matches validator
         digit *= 2;
         if (digit > 9) digit -= 9;
       }
@@ -35,6 +35,24 @@ function getLuhnCheckDigit(number) {
   
     const mod = sum % 10;
     return mod === 0 ? '0' : (10 - mod).toString();
+}
+
+function generateValidMastercardNumber() {
+    // Use known safe prefixes from Mastercard test ranges
+    const binPrefixes = [
+      '2221', '2222', '2223', '2230', // safe subset
+      '5100', '5200', '5300', '5400', '5500'
+    ];
+  
+    const prefix = binPrefixes[Math.floor(Math.random() * binPrefixes.length)];
+    let number = prefix;
+  
+    while (number.length < 15) {
+      number += Math.floor(Math.random() * 10);
+    }
+  
+    const checkDigit = getLuhnCheckDigit(number);
+    return formatCardNumber(number + checkDigit);
 }
 
 async function simulateUser(page) {
@@ -92,7 +110,11 @@ async function simulateUser(page) {
     await randomDelay(min=500, max=1000);
     await page.fill('#state', faker.location.state());
     await randomDelay(min=500, max=1000);
-    await page.fill('#credit_card_number', generateValidVisaNumber());
+    // Fill in credit card number with 50% chance of Visa or Mastercard
+    await page.fill(
+        '#credit_card_number',
+        Math.random() < 0.5 ? generateValidVisaNumber() : generateValidMastercardNumber()
+    );
     await randomDelay(min=500, max=1000);
     await page.selectOption('#credit_card_expiration_month', `${faker.number.int({ min: 1, max: 12 })}`);
     await randomDelay(min=500, max=1000);

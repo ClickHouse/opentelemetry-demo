@@ -15,47 +15,45 @@ const transactionsCounter = meter.createCounter('app.payment.transactions');
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
 
 // Custom credit card validator with unbounded cache (deliberate memory leak)
-const cardValidationCache = [];
+const visaValidationCache = [];
 
 function isValidCardNumber(cardNumber) {
   const sanitized = cardNumber.replace(/\D/g, '');
-  if (!/^4\d{15}$/.test(sanitized)) return false;
 
-  const digits = sanitized.split('').map(Number);
+  const isVisa = /^4\d{12}(\d{3})?$/.test(sanitized);
+  const isMastercard = /^(5[1-5][0-9]{14}|2[2-7][0-9]{14})$/.test(sanitized);
+  if (!isVisa && !isMastercard) return false;
+
+  const digits = sanitized.split('').reverse().map(Number);
   let sum = 0;
 
   for (let i = 0; i < digits.length; i++) {
     let digit = digits[i];
-    if (i % 2 === 0) {
+    if (i % 2 === 1) {
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
     sum += digit;
   }
-
   return sum % 10 === 0;
 }
 
+
 function validateCreditCard(number, cache) {
-  // Check cache first
-  const cachedResult = cardValidationCache.find(entry => entry.number === number);
-  if (cachedResult) {
-    return cachedResult.result;
-  }
-
-  // Validate card using Luhn algorithm
-  const isValid = isValidCardNumber(number);
   const cardType = number.startsWith('4') ? 'visa' : 'unknown';
-
-  const result = { card_type: cardType, valid: isValid };
-
-  if (cache) {
-    // Cache the result (unbounded growth)
-    cardValidationCache.push({ number, result });
-    console.log(`cache length: ${cardValidationCache.length}`)
+  if (cardType === 'visa' && cache) {
+    const cachedResult = visaValidationCache.find(entry => entry.number === number);
+    if (cachedResult) {
+      return cachedResult.result;
+    }
+    const isValid = isValidCardNumber(number);
+    visaValidationCache.push({ number, result: { card_type: cardType, valid: isValid }, cached: true });
+    logger.info({size: visaValidationCache.length}, 'cache');
+    return { card_type: cardType, valid: isValid };
+  } else {
+    const isValid = isValidCardNumber(number);
+    return { card_type: cardType, valid: isValid, cached: false };
   }
-
-  return result;
 }
 
 /** Return random element from given array */
@@ -93,7 +91,7 @@ module.exports.charge = async request => {
   const transactionId = uuidv4();
     
   // Use custom validator with cache based on flag
-  const { card_type: cardType, valid } = validateCreditCard(number, cacheEnabled);
+  const { card_type: cardType, valid, cached } = validateCreditCard(number, cacheEnabled);
 
   const loyalty_level = random(LOYALTY_LEVEL);
 
@@ -124,7 +122,7 @@ module.exports.charge = async request => {
   }
 
   const { units, nanos, currencyCode } = request.amount;
-  logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level }, 'Transaction complete.');
+  logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level, cached }, 'Transaction complete.');
   transactionsCounter.add(1, { 'app.payment.currency': currencyCode });
   span.end();
 

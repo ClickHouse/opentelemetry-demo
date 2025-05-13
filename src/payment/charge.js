@@ -40,7 +40,7 @@ function isValidCardNumber(cardNumber) {
 
 
 function validateCreditCard(number, cache) {
-  const cardType = number.startsWith('4') ? 'visa' : 'unknown';
+  const cardType = /^4\d{12}(\d{3})?$/.test(sanitized) ? 'visa' : ( /^(5[1-5][0-9]{14}|2[2-7][0-9]{14})$/.test(sanitized) ? 'mastercard' : 'unknown');
   if (cardType === 'visa' && cache) {
     const cachedResult = visaValidationCache.find(entry => entry.number === number);
     if (cachedResult) {

@@ -23,18 +23,6 @@ spec:
       app.kubernetes.io/name: clickhouse
       app.kubernetes.io/instance: opentelemetry-demo
 ---
-# Source: opentelemetry-demo/charts/grafana/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-automountServiceAccountToken: false
-metadata:
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-  name: grafana
-  namespace: otel-demo
----
 # Source: opentelemetry-demo/charts/jaeger/templates/allinone-sa.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -84,92 +72,6 @@ metadata:
     app.kubernetes.io/instance: opentelemetry-demo
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
----
-# Source: opentelemetry-demo/charts/grafana/templates/secret.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: grafana
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-type: Opaque
-data:
-  
-  admin-user: "YWRtaW4="
-  admin-password: "YWRtaW4="
-  ldap-toml: ""
----
-# Source: opentelemetry-demo/charts/grafana/templates/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-data:
-  
-  plugins: grafana-clickhouse-datasource
-  grafana.ini: |
-    [analytics]
-    check_for_updates = true
-    [auth]
-    disable_login_form = true
-    [auth.anonymous]
-    enabled = true
-    org_name = Main Org.
-    org_role = Admin
-    [grafana_net]
-    url = https://grafana.net
-    [log]
-    mode = console
-    [paths]
-    data = /var/lib/grafana/
-    logs = /var/log/grafana
-    plugins = /var/lib/grafana/plugins
-    provisioning = /etc/grafana/provisioning
-    [server]
-    domain = ''
-    root_url = %(protocol)s://%(domain)s:%(http_port)s/grafana
-    serve_from_sub_path = true
-  datasources.yaml: |
-    apiVersion: 1
-    datasources:
-    - editable: true
-      isDefault: true
-      jsonData:
-        exemplarTraceIdDestinations:
-        - datasourceUid: webstore-traces
-          name: trace_id
-        - name: trace_id
-          url: http://localhost:8080/jaeger/ui/trace/$${__value.raw}
-          urlDisplayLabel: View in Jaeger UI
-      name: Prometheus
-      type: prometheus
-      uid: webstore-metrics
-      url: http://prometheus:9090
-    - editable: true
-      isDefault: false
-      name: Jaeger
-      type: jaeger
-      uid: webstore-traces
-      url: http://jaeger-query:16686/jaeger/ui
-  dashboardproviders.yaml: |
-    apiVersion: 1
-    providers:
-    - disableDeletion: false
-      editable: true
-      folder: ""
-      name: default
-      options:
-        path: /var/lib/grafana/dashboards/default
-      orgId: 1
-      type: file
 ---
 # Source: opentelemetry-demo/templates/flagd-config.yaml
 apiVersion: v1
@@ -274,6 +176,15 @@ data:
           },
           "defaultVariant": "off"
         },
+         "paymentCacheLeak": {
+            "description": "Payment service cache leak",
+            "state": "ENABLED",
+            "variants": {
+              "on": true,
+              "off": false
+            },
+            "defaultVariant": "on"
+          },
         "loadGeneratorFloodHomepage": {
           "description": "Flood the frontend with a large amount of requests.",
           "state": "ENABLED",
@@ -461,17 +372,6 @@ data:
       ]
     }
 ---
-# Source: opentelemetry-demo/charts/grafana/templates/clusterrole.yaml
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-  name: grafana-clusterrole
-rules: []
----
 # Source: opentelemetry-demo/charts/opentelemetry-collector/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -544,24 +444,6 @@ rules:
     verbs:
       - get
 ---
-# Source: opentelemetry-demo/charts/grafana/templates/clusterrolebinding.yaml
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: grafana-clusterrolebinding
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-subjects:
-  - kind: ServiceAccount
-    name: grafana
-    namespace: otel-demo
-roleRef:
-  kind: ClusterRole
-  name: grafana-clusterrole
-  apiGroup: rbac.authorization.k8s.io
----
 # Source: opentelemetry-demo/charts/opentelemetry-collector/templates/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -600,82 +482,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: prometheus
----
-# Source: opentelemetry-demo/charts/grafana/templates/role.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: grafana
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-rules: []
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: otel-demo:prometheus-test
-rules:
-- apiGroups: [""]
-  resources:
-  - pods
-  verbs: ["get", "list", "watch"]
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: otel-demo:prometheus-test
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: otel-demo:prometheus-test
-subjects:
-- kind: ServiceAccount
-  namespace: otel-demo
-  name: default
----
-# Source: opentelemetry-demo/charts/grafana/templates/rolebinding.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: grafana
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: grafana
-subjects:
-- kind: ServiceAccount
-  name: grafana
-  namespace: otel-demo
----
-# Source: opentelemetry-demo/charts/grafana/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: grafana
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-spec:
-  type: ClusterIP
-  ports:
-    - name: service
-      port: 80
-      protocol: TCP
-      targetPort: 3000
-  selector:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
 ---
 # Source: opentelemetry-demo/charts/jaeger/templates/allinone-agent-svc.yaml
 apiVersion: v1
@@ -1171,137 +977,6 @@ spec:
     
     opentelemetry.io/name: valkey-cart
 ---
-# Source: opentelemetry-demo/charts/grafana/templates/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: grafana
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: grafana
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "11.5.2"
-spec:
-  replicas: 1
-  revisionHistoryLimit: 10
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: grafana
-      app.kubernetes.io/instance: opentelemetry-demo
-  strategy:
-    type: RollingUpdate
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: grafana
-        app.kubernetes.io/instance: opentelemetry-demo
-        app.kubernetes.io/version: "11.5.2"
-      annotations:
-        checksum/config: 99cca986c6d5f6511900d815ee5a70d0c284aeb70af56fb96108c7bf456eff87
-        checksum/sc-dashboard-provider-config: e70bf6a851099d385178a76de9757bb0bef8299da6d8443602590e44f05fdf24
-        checksum/secret: bed677784356b2af7fb0d87455db21f077853059b594101a4f6532bfbd962a7f
-        kubectl.kubernetes.io/default-container: grafana
-    spec:
-      
-      serviceAccountName: grafana
-      automountServiceAccountToken: true
-      shareProcessNamespace: false
-      securityContext:
-        fsGroup: 472
-        runAsGroup: 472
-        runAsNonRoot: true
-        runAsUser: 472
-      enableServiceLinks: true
-      containers:
-        - name: grafana
-          image: "docker.io/grafana/grafana:11.5.2"
-          imagePullPolicy: Always
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            seccompProfile:
-              type: RuntimeDefault
-          volumeMounts:
-            - name: config
-              mountPath: "/etc/grafana/grafana.ini"
-              subPath: grafana.ini
-            - name: storage
-              mountPath: "/var/lib/grafana"
-            - name: dashboards-default
-              mountPath: "/var/lib/grafana/dashboards/default"
-            - name: config
-              mountPath: "/etc/grafana/provisioning/datasources/datasources.yaml"
-              subPath: "datasources.yaml"
-            - name: config
-              mountPath: "/etc/grafana/provisioning/dashboards/dashboardproviders.yaml"
-              subPath: "dashboardproviders.yaml"
-          ports:
-            - name: grafana
-              containerPort: 3000
-              protocol: TCP
-            - name: gossip-tcp
-              containerPort: 9094
-              protocol: TCP
-            - name: gossip-udp
-              containerPort: 9094
-              protocol: UDP
-            - name: profiling
-              containerPort: 6060
-              protocol: TCP
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: GF_SECURITY_ADMIN_USER
-              valueFrom:
-                secretKeyRef:
-                  name: grafana
-                  key: admin-user
-            - name: GF_SECURITY_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: grafana
-                  key: admin-password
-            - name: GF_INSTALL_PLUGINS
-              valueFrom:
-                configMapKeyRef:
-                  name: grafana
-                  key: plugins
-            - name: GF_PATHS_DATA
-              value: /var/lib/grafana/
-            - name: GF_PATHS_LOGS
-              value: /var/log/grafana
-            - name: GF_PATHS_PLUGINS
-              value: /var/lib/grafana/plugins
-            - name: GF_PATHS_PROVISIONING
-              value: /etc/grafana/provisioning
-          livenessProbe:
-            failureThreshold: 10
-            httpGet:
-              path: /api/health
-              port: 3000
-            initialDelaySeconds: 60
-            timeoutSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /api/health
-              port: 3000
-          resources:
-            limits:
-              memory: 150Mi
-      volumes:
-        - name: config
-          configMap:
-            name: grafana
-        - name: dashboards-default
-          configMap:
-            name: grafana-dashboards
-        - name: storage
-          emptyDir: {}
----
 # Source: opentelemetry-demo/charts/jaeger/templates/allinone-deploy.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -1402,8 +1077,12 @@ spec:
             successThreshold: 1
             timeoutSeconds: 1
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 400Mi
+              cpu: 500m
+              memory: 800Mi
           volumeMounts:
       securityContext:
         fsGroup: 10001
@@ -1463,8 +1142,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 120Mi
+              cpu: 300m
+              memory: 400Mi
           volumeMounts:
       initContainers:
         - command:
@@ -1536,8 +1219,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 300Mi
+              cpu: 500m
+              memory: 600Mi
           volumeMounts:
       volumes:
 ---
@@ -1604,8 +1291,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 160Mi
+              cpu: 250m
+              memory: 400Mi
           volumeMounts:
       initContainers:
         - command:
@@ -1690,8 +1381,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 20Mi
+              cpu: 250m
+              memory: 400Mi
           volumeMounts:
       initContainers:
         - command:
@@ -1759,8 +1454,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 20Mi
+              cpu: 250m
+              memory: 400Mi
           volumeMounts:
       volumes:
 ---
@@ -1821,8 +1520,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 100Mi
+              cpu: 250m
+              memory: 400Mi
           volumeMounts:
       volumes:
 ---
@@ -1892,8 +1595,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 75Mi
+              cpu: 250m
+              memory: 400Mi
           volumeMounts:
             - name: config-rw
               mountPath: /etc/flagd
@@ -1921,8 +1628,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 100Mi
+              cpu: 250m
+              memory: 400Mi
           volumeMounts:
             - mountPath: /app/data
               name: config-rw
@@ -2000,8 +1711,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 300Mi
+              cpu: 250m
+              memory: 600Mi
           volumeMounts:
       initContainers:
         - command:
@@ -2090,11 +1805,19 @@ spec:
               value: frontend-web
             - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
               value: http://localhost:8080/otlp-http/v1/traces
+            - name: PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector:4318
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
+            - name: IMAGE_BASE_URL
+              value: https://oteldemo.s3.eu-west-3.amazonaws.com
           resources:
-            limits:
+            requests:
+              cpu: 100m
               memory: 250Mi
+            limits:
+              cpu: 1000m
+              memory: 500Mi
           securityContext:
             runAsGroup: 1001
             runAsNonRoot: true
@@ -2189,8 +1912,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 50m
+              memory: 50Mi
             limits:
-              memory: 65Mi
+              cpu: 500m
+              memory: 200Mi
           securityContext:
             runAsGroup: 101
             runAsNonRoot: true
@@ -2255,8 +1982,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
-            limits:
+            requests:
+              cpu: 50m
               memory: 50Mi
+            limits:
+              cpu: 100m
+              memory: 100Mi
           volumeMounts:
       volumes:
 ---
@@ -2319,8 +2050,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 250m
+              memory: 500Mi
             limits:
-              memory: 600Mi
+              cpu: 500m
+              memory: 1000Mi
           securityContext:
             runAsGroup: 1000
             runAsNonRoot: true
@@ -2391,7 +2126,7 @@ spec:
             - name: LOCUST_AUTOSTART
               value: "true"
             - name: LOCUST_BROWSER_TRAFFIC_ENABLED
-              value: "true"
+              value: "false"
             - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
               value: python
             - name: FLAGD_HOST
@@ -2407,6 +2142,59 @@ spec:
               memory: 1500Mi
           volumeMounts:
       volumes:
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: artillery-loadgen
+  labels:
+    opentelemetry.io/name: artillery-loadgen
+    app.kubernetes.io/instance: opentelemetry-demo
+    app.kubernetes.io/component: artillery-loadgen
+    app.kubernetes.io/name: artillery-loadgen
+    app.kubernetes.io/version: "1.0.0"  # Replace with actual version if known
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      opentelemetry.io/name: artillery-loadgen
+  template:
+    metadata:
+      labels:
+        opentelemetry.io/name: artillery-loadgen
+        app.kubernetes.io/instance: opentelemetry-demo
+        app.kubernetes.io/component: artillery-loadgen
+        app.kubernetes.io/name: artillery-loadgen
+    spec:
+      serviceAccountName: opentelemetry-demo
+      containers:
+        - name: artillery-loadgen
+          image: 'clickhouse/ch-otel-demo:latest-artillery'
+          imagePullPolicy: Always
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - |
+              while true; do
+                echo "Starting Artillery load test..."
+                # Run the original container command 
+                /bin/sh /app/run.sh
+                echo "Load test completed. Restarting in 5 seconds..."
+                sleep 1
+              done
+          env:
+            - name: DEMO_URL
+              value: "http://frontend-proxy:8080"  # Replace with actual service name or internal DNS
+            - name: ARRIVAL_COUNT
+              value: "5"
+            - name: DURATION
+              value: "60"
+          resources:
+            requests:
+              memory: "512Mi"
+            limits:
+              memory: "1Gi"
 ---
 # Source: opentelemetry-demo/templates/component.yaml
 apiVersion: apps/v1
@@ -2467,8 +2255,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
             limits:
-              memory: 120Mi
+              cpu: 500m
+              memory: 800Mi
           securityContext:
             runAsGroup: 1000
             runAsNonRoot: true
@@ -2537,8 +2329,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 50m
+              memory: 50Mi
             limits:
-              memory: 20Mi
+              cpu: 100m
+              memory: 200Mi
           volumeMounts:
             - name: product-catalog-products
               mountPath: /usr/src/app/products
@@ -2604,8 +2400,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 50m
+              memory: 50Mi
             limits:
-              memory: 40Mi
+              cpu: 100m
+              memory: 200Mi
           securityContext:
             runAsGroup: 33
             runAsNonRoot: true
@@ -2678,8 +2478,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 200m
+              memory: 200Mi
             limits:
-              memory: 500Mi
+              cpu: 500m
+              memory: 1000Mi
           volumeMounts:
       volumes:
 ---
@@ -2740,8 +2544,12 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 50m
+              memory: 50Mi
             limits:
-              memory: 20Mi
+              cpu: 100m
+              memory: 200Mi
           volumeMounts:
       volumes:
 ---
@@ -2796,345 +2604,18 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
+            requests:
+              cpu: 50m
+              memory: 50Mi
             limits:
-              memory: 20Mi
+              cpu: 100m
+              memory: 200Mi
           securityContext:
             runAsGroup: 1000
             runAsNonRoot: true
             runAsUser: 999
           volumeMounts:
       volumes:
----
-# ConfigMap for ClickHouse configuration files
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: clickhouse-config
-data:
-  config.xml: |
-    <?xml version="1.0"?>
-    <clickhouse>
-        <logger>
-            <level>debug</level>
-            <console>true</console>
-            <log remove="remove"/>
-            <errorlog remove="remove"/>
-        </logger>
-
-        <listen_host>0.0.0.0</listen_host>
-        <http_port>8123</http_port>
-        <tcp_port>9000</tcp_port>
-        <interserver_http_host>ch-server</interserver_http_host>
-        <interserver_http_port>9009</interserver_http_port>
-
-        <max_connections>4096</max_connections>
-        <keep_alive_timeout>64</keep_alive_timeout>
-        <max_concurrent_queries>100</max_concurrent_queries>
-        <uncompressed_cache_size>8589934592</uncompressed_cache_size>
-        <mark_cache_size>5368709120</mark_cache_size>
-
-        <path>/var/lib/clickhouse/</path>
-        <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
-        <user_files_path>/var/lib/clickhouse/user_files/</user_files_path>
-
-        <users_config>users.xml</users_config>
-        <default_profile>default</default_profile>
-        <default_database>default</default_database>
-        <timezone>UTC</timezone>
-        <mlock_executable>false</mlock_executable>
-
-        <!-- Prometheus exporter -->
-        <prometheus>
-            <endpoint>/metrics</endpoint>
-            <port>9363</port>
-            <metrics>true</metrics>
-            <events>true</events>
-            <asynchronous_metrics>true</asynchronous_metrics>
-            <errors>true</errors>
-        </prometheus>
-
-        <!-- Query log. Used only for queries with setting log_queries = 1. -->
-        <query_log>
-            <database>system</database>
-            <table>query_log</table>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        </query_log>
-
-        <!-- Metric log contains rows with current values of ProfileEvents, CurrentMetrics collected with "collect_interval_milliseconds" interval. -->
-        <metric_log>
-            <database>system</database>
-            <table>metric_log</table>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-            <collect_interval_milliseconds>1000</collect_interval_milliseconds>
-        </metric_log>
-
-        <!--
-            Asynchronous metric log contains values of metrics from
-            system.asynchronous_metrics.
-        -->
-        <asynchronous_metric_log>
-            <database>system</database>
-            <table>asynchronous_metric_log</table>
-            <!--
-                Asynchronous metrics are updated once a minute, so there is
-                no need to flush more often.
-            -->
-            <flush_interval_milliseconds>7000</flush_interval_milliseconds>
-        </asynchronous_metric_log>
-
-        <!--
-            OpenTelemetry log contains OpenTelemetry trace spans.
-        -->
-        <opentelemetry_span_log>
-            <!--
-                The default table creation code is insufficient, this <engine> spec
-                is a workaround. There is no 'event_time' for this log, but two times,
-                start and finish. It is sorted by finish time, to avoid inserting
-                data too far away in the past (probably we can sometimes insert a span
-                that is seconds earlier than the last span in the table, due to a race
-                between several spans inserted in parallel). This gives the spans a
-                global order that we can use to e.g. retry insertion into some external
-                system.
-            -->
-            <engine>
-                engine MergeTree
-                partition by toYYYYMM(finish_date)
-                order by (finish_date, finish_time_us, trace_id)
-            </engine>
-            <database>system</database>
-            <table>opentelemetry_span_log</table>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        </opentelemetry_span_log>
-
-
-        <!-- Crash log. Stores stack traces for fatal errors.
-            This table is normally empty. -->
-        <crash_log>
-            <database>system</database>
-            <table>crash_log</table>
-
-            <partition_by />
-            <flush_interval_milliseconds>1000</flush_interval_milliseconds>
-        </crash_log>
-
-        <!-- Profiling on Processors level. -->
-        <processors_profile_log>
-            <database>system</database>
-            <table>processors_profile_log</table>
-
-            <partition_by>toYYYYMM(event_date)</partition_by>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        </processors_profile_log>
-
-        <!-- Uncomment if use part log.
-            Part log contains information about all actions with parts in MergeTree tables (creation, deletion, merges, downloads).-->
-        <part_log>
-            <database>system</database>
-            <table>part_log</table>
-            <partition_by>toYYYYMM(event_date)</partition_by>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        </part_log>
-
-        <!-- Trace log. Stores stack traces collected by query profilers.
-            See query_profiler_real_time_period_ns and query_profiler_cpu_time_period_ns settings. -->
-        <trace_log>
-            <database>system</database>
-            <table>trace_log</table>
-
-            <partition_by>toYYYYMM(event_date)</partition_by>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        </trace_log>
-
-        <!-- Query thread log. Has information about all threads participated in query execution.
-            Used only for queries with setting log_query_threads = 1. -->
-        <query_thread_log>
-            <database>system</database>
-            <table>query_thread_log</table>
-            <partition_by>toYYYYMM(event_date)</partition_by>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        </query_thread_log>
-
-        <!-- Query views log. Has information about all dependent views associated with a query.
-            Used only for queries with setting log_query_views = 1. -->
-        <query_views_log>
-            <database>system</database>
-            <table>query_views_log</table>
-            <partition_by>toYYYYMM(event_date)</partition_by>
-            <flush_interval_milliseconds>7500</flush_interval_milliseconds>
-        </query_views_log>
-
-        <remote_servers>
-            <hdx_cluster>
-                <shard>
-                    <replica>
-                        <host>ch-server</host>
-                        <port>9000</port>
-                    </replica>
-                </shard>
-            </hdx_cluster>
-        </remote_servers>
-
-        <distributed_ddl>
-            <path>/clickhouse/task_queue/ddl</path>
-        </distributed_ddl>
-
-        <format_schema_path>/var/lib/clickhouse/format_schemas/</format_schema_path>
-    </clickhouse>
-  users.xml: |
-    <?xml version="1.0"?>
-    <clickhouse>
-        <profiles>
-            <default>
-                <max_memory_usage>10000000000</max_memory_usage>
-                <use_uncompressed_cache>0</use_uncompressed_cache>
-                <load_balancing>in_order</load_balancing>
-                <log_queries>1</log_queries>
-            </default>
-        </profiles>
-        <users>
-            <default>
-                <password></password>
-                <profile>default</profile>
-                <networks>
-                    <ip>::/0</ip>
-                </networks>
-                <quota>default</quota>
-            </default>
-            <api>
-                <password>api</password>
-                <profile>default</profile>
-                <networks>
-                    <ip>::/0</ip>
-                </networks>
-                <quota>default</quota>
-            </api>
-            <worker>
-                <password>worker</password>
-                <profile>default</profile>
-                <networks>
-                    <ip>::/0</ip>
-                </networks>
-                <quota>default</quota>
-            </worker>
-        </users>
-        <quotas>
-            <default>
-                <interval>
-                    <duration>3600</duration>
-                    <queries>0</queries>
-                    <errors>0</errors>
-                    <result_rows>0</result_rows>
-                    <read_rows>0</read_rows>
-                    <execution_time>0</execution_time>
-                </interval>
-            </default>
-        </quotas>
-    </clickhouse>
----
-# PersistentVolumeClaim for ClickHouse data
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: clickhouse-data-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi  # Adjust size as needed
----
-# PersistentVolumeClaim for ClickHouse logs
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: clickhouse-logs-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi  # Adjust size as needed
----
-# Deployment for ClickHouse
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: clickhouse
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: clickhouse
-  template:
-    metadata:
-      labels:
-        app: clickhouse
-    spec:
-      containers:
-      - name: clickhouse
-        image: clickhouse/clickhouse-server:24-alpine
-        ports:
-        - containerPort: 8123
-          name: http
-        - containerPort: 9000
-          name: native
-        env:
-        - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
-          value: "1"
-        volumeMounts:
-        - name: config-volume
-          mountPath: /etc/clickhouse-server/config.xml
-          subPath: config.xml
-        - name: config-volume
-          mountPath: /etc/clickhouse-server/users.xml
-          subPath: users.xml
-        - name: data-volume
-          mountPath: /var/lib/clickhouse
-        - name: logs-volume
-          mountPath: /var/log/clickhouse-server
-        livenessProbe:
-          httpGet:
-            path: /ping
-            port: 8123
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 10
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /ping
-            port: 8123
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          timeoutSeconds: 10
-          failureThreshold: 3
-      volumes:
-      - name: config-volume
-        configMap:
-          name: clickhouse-config
-      - name: data-volume
-        persistentVolumeClaim:
-          claimName: clickhouse-data-pvc
-      - name: logs-volume
-        persistentVolumeClaim:
-          claimName: clickhouse-logs-pvc
----
-# Service for ClickHouse
-apiVersion: v1
-kind: Service
-metadata:
-  name: clickhouse
-spec:
-  selector:
-    app: clickhouse
-  ports:
-  - name: http
-    port: 8123
-    targetPort: 8123
-  - name: native
-    port: 9000
-    targetPort: 9000
-  type: ClusterIP
 ---
 # MongoDB Deployment
 apiVersion: apps/v1
@@ -3321,6 +2802,32 @@ data:
 
     # extra settings to be merged into OpenTelemetry Collector configuration
     # do not delete this file
+    exporters: 
+        clickhouse/rrweb:
+          endpoint: tcp://${env:CLICKHOUSE_SERVER_ENDPOINT}?dial_timeout=10s&compress=lz4&secure=true
+          database: ${env:CLICKHOUSE_DB}
+          username: ${env:CLICKHOUSE_USER}
+          password: ${env:CLICKHOUSE_PASSWORD}
+          ttl: 72h
+          logs_table_name: hyperdx_sessions
+          timeout: 5s
+          retry_on_failure:
+            enabled: true
+            initial_interval: 5s
+            max_interval: 30s
+            max_elapsed_time: 300s
+        clickhouse:
+          endpoint: tcp://${env:CLICKHOUSE_SERVER_ENDPOINT}?dial_timeout=10s&compress=lz4&secure=true
+          database: ${env:CLICKHOUSE_DB}
+          username: ${env:CLICKHOUSE_USER}
+          password: ${env:CLICKHOUSE_PASSWORD}
+          ttl: 72h
+          timeout: 5s
+          retry_on_failure:
+            enabled: true
+            initial_interval: 5s
+            max_interval: 30s
+            max_elapsed_time: 300s
 
     receivers:
       httpcheck/frontend-proxy:
@@ -3333,6 +2840,43 @@ data:
     
     processors:
       transform:
+        log_statements:
+          - context: log
+            error_mode: ignore
+            statements:
+              # JSON parsing: Extends log attributes with the fields from structured log body content, either as an OTEL map or
+              # as a string containing JSON content.
+              - set(log.cache, ExtractPatterns(log.body, "(?P<0>(\\{.*\\}))")) where IsString(log.body)
+              - merge_maps(log.attributes, ParseJSON(log.cache["0"]), "upsert") where IsMap(log.cache) and IsString(log.cache["0"]) and IsMatch(log.cache["0"], "^{\\s*\\{.*\\}\\s*}$")
+              - flatten(log.attributes) where IsMap(log.cache)
+              - merge_maps(log.attributes, log.body, "upsert") where IsMap(log.body)
+          - context: log
+            error_mode: ignore
+            conditions:
+              - severity_number == 0 and severity_text == ""
+            statements:
+              # Infer: extract the first log level keyword from the first 256 characters of the body
+              - set(log.cache["substr"], log.body.string) where Len(log.body.string) < 256
+              - set(log.cache["substr"], Substring(log.body.string, 0, 256)) where Len(log.body.string) >= 256
+              - set(log.cache, ExtractPatterns(log.cache["substr"], "(?i)(?P<0>(alert|crit|emerg|fatal|error|err|warn|notice|debug|dbug|trace))"))
+              # Infer: detect FATAL
+              - set(log.severity_number, SEVERITY_NUMBER_FATAL) where IsMatch(log.cache["0"], "(?i)(alert|crit|emerg|fatal)")
+              - set(log.severity_text, "fatal") where log.severity_number == SEVERITY_NUMBER_FATAL
+              # Infer: detect ERROR
+              - set(log.severity_number, SEVERITY_NUMBER_ERROR) where IsMatch(log.cache["0"], "(?i)(error|err)")
+              - set(log.severity_text, "error") where log.severity_number == SEVERITY_NUMBER_ERROR
+              # Infer: detect WARN
+              - set(log.severity_number, SEVERITY_NUMBER_WARN) where IsMatch(log.cache["0"], "(?i)(warn|notice)")
+              - set(log.severity_text, "warn") where log.severity_number == SEVERITY_NUMBER_WARN
+              # Infer: detect DEBUG
+              - set(log.severity_number, SEVERITY_NUMBER_DEBUG) where IsMatch(log.cache["0"], "(?i)(debug|dbug)")
+              - set(log.severity_text, "debug") where log.severity_number == SEVERITY_NUMBER_DEBUG
+              # Infer: detect TRACE
+              - set(log.severity_number, SEVERITY_NUMBER_TRACE) where IsMatch(log.cache["0"], "(?i)(trace)")
+              - set(log.severity_text, "trace") where log.severity_number == SEVERITY_NUMBER_TRACE
+              # Infer: else
+              - set(log.severity_text, "info") where log.severity_number == 0
+              - set(log.severity_number, SEVERITY_NUMBER_INFO) where log.severity_number == 0
         error_mode: ignore
         trace_statements:
           - context: span
@@ -3401,7 +2945,8 @@ spec:
           name: metrics
         env:
         - name: CLICKHOUSE_SERVER_ENDPOINT
-          value: "clickhouse:9000"
+          value: "sql-clickhouse.clickhouse.com:9440"
+        
         - name: HYPERDX_LOG_LEVEL
           valueFrom:
             configMapKeyRef:
@@ -3434,10 +2979,16 @@ spec:
               key: OTEL_COLLECTOR_PORT_HTTP
         - name: GOMEMLIMIT
           value: "160MiB"
+        
         - name: CLICKHOUSE_PASSWORD
-          value: ""
+          valueFrom:
+            secretKeyRef:
+              name: otel-k8s-secret
+              key: CLICKHOUSE_PASSWORD
         - name: CLICKHOUSE_USER
-          value: "default"
+          value: "hyperdx_ingest"
+        - name: CLICKHOUSE_DB
+          value: "otel_v2"
         livenessProbe:
           httpGet:
             path: /
@@ -3453,6 +3004,7 @@ spec:
         - name: config-extras
           mountPath: /etc/otelcol-contrib/config-extras.yaml
           subPath: config-extras.yaml
+          volumeMounts:
         securityContext:
           runAsUser: 0
           runAsGroup: 0
@@ -3460,6 +3012,7 @@ spec:
       - name: config-extras
         configMap:
           name: otel-collector-config-extras
+
 ---
 # OpenTelemetry Collector Service
 apiVersion: v1

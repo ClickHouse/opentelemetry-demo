@@ -27,8 +27,8 @@ helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm
 Install deployment and daemonset to collect metrics. 
 
 ```
-helm install --namespace otel-demo k8s-otel-deployment open-telemetry/opentelemetry-collector -f kubernetes/deployment.yaml 
+helm install --namespace otel-demo k8s-otel-deployment open-telemetry/opentelemetry-collector -f kubernetes/k8s-otel/deployment.yaml 
 
-helm install --namespace otel-demo k8s-otel-daemonset open-telemetry/opentelemetry-collector -f kubernetes/daemonset.yaml 
+helm install --namespace otel-demo k8s-otel-daemonset open-telemetry/opentelemetry-collector -f kubernetes/k8s-otel/daemonset.yaml
 ```
 

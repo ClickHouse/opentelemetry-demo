@@ -1,7 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-const opentelemetry = require('@opentelemetry/sdk-node');
+const HyperDX = require('@hyperdx/node-opentelemetry');
+
 
 HyperDX.init({
   apiKey: 'YOUR_INGESTION_API_KEY',

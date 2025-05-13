@@ -123,7 +123,7 @@ def get_luhn_check_digit(number: str) -> str:
     mod = total % 10
     return '0' if mod == 0 else str(10 - mod)
 
-def generate_valid_visa_number() -> str:
+def generate_credit_card() -> str:
     number = '4'
     for _ in range(14):
         number += str(random.randint(0, 9))
@@ -182,7 +182,7 @@ class WebsiteUser(HttpUser):
         checkout_person = random.choice(people)
         checkout_person["userId"] = user
         # generate a valid credit card number
-        checkout_person["creditCard"]["creditCardNumber"] = self.generate_credit_card()
+        checkout_person["creditCard"]["creditCardNumber"] = generate_credit_card()
         self.client.post("/api/checkout", json=checkout_person)
 
     @task(1)
@@ -193,6 +193,8 @@ class WebsiteUser(HttpUser):
             self.add_to_cart(user=user)
         checkout_person = random.choice(people)
         checkout_person["userId"] = user
+        # generate a valid credit card number
+        checkout_person["creditCard"]["creditCardNumber"] = generate_credit_card()
         self.client.post("/api/checkout", json=checkout_person)
 
     @task(5)

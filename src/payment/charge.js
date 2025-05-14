@@ -4,9 +4,12 @@ const { v4: uuidv4 } = require('uuid');
 
 const { OpenFeature } = require('@openfeature/server-sdk');
 const { FlagdProvider } = require('@openfeature/flagd-provider');
+const { context, propagation, trace, metrics } = require('@opentelemetry/api');
+
 const flagProvider = new FlagdProvider();
 
 const logger = require('./logger');
+const tracer = trace.getTracer('payment');
 const transactionsCounter = {}
 const HyperDX = require('@hyperdx/node-opentelemetry');
 
@@ -70,6 +73,8 @@ function random(arr) {
 }
 
 module.exports.charge = async request => {
+  const span = tracer.startSpan('charge');
+
   await OpenFeature.setProviderAndWait(flagProvider);
 
   const numberVariant = await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
@@ -130,6 +135,6 @@ module.exports.charge = async request => {
 
 
   logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level, cached }, 'Transaction complete.');
-  
+  span.end();
   return { transactionId };
 };

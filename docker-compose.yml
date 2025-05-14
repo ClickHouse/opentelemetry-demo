@@ -293,6 +293,7 @@ services:
       - FLAGD_HOST
       - FLAGD_PORT
       - IMAGE_BASE_URL
+      - HDX_NODE_EXPERIMENTAL_EXCEPTION_CAPTURE=1
     depends_on:
       ad:
         condition: service_started
@@ -450,10 +451,12 @@ services:
       - PAYMENT_PORT
       - FLAGD_HOST
       - FLAGD_PORT
-      - OTEL_EXPORTER_OTLP_ENDPOINT
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=payment
+      - HDX_NODE_EXPERIMENTAL_EXCEPTION_CAPTURE=1
+      - HDX_NODE_BETA_MODE=1
     depends_on:
       otel-collector:
         condition: service_started

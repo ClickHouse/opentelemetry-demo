@@ -1,6 +1,5 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-const { context, propagation, trace, metrics } = require('@opentelemetry/api');
 const { v4: uuidv4 } = require('uuid');
 
 const { OpenFeature } = require('@openfeature/server-sdk');
@@ -8,11 +7,11 @@ const { FlagdProvider } = require('@openfeature/flagd-provider');
 const flagProvider = new FlagdProvider();
 
 const logger = require('./logger');
-const tracer = trace.getTracer('payment');
-const meter = metrics.getMeter('payment');
-const transactionsCounter = meter.createCounter('app.payment.transactions');
+const transactionsCounter = {}
+const HyperDX = require('@hyperdx/node-opentelemetry');
 
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
+const CACHE_SIZE = process.env.CACHE_SIZE || 1000;
 
 // Custom credit card validator with unbounded cache (deliberate memory leak)
 const visaValidationCache = [];
@@ -48,9 +47,16 @@ function validateCreditCard(number, cache) {
       return cachedResult.result;
     }
     const isValid = isValidCardNumber(number);
+    if (visaValidationCache.length >= CACHE_SIZE) {
+      throw new Error('Visa cache full: cannot add new item.');
+    }
     visaValidationCache.push({ number, result: { card_type: cardType, valid: isValid }, cached: true });
+    if (visaValidationCache.length === CACHE_SIZE) {
+      // BUG: Looks like eviction, but doesn't affect the original array - should be visaValidationCache = visaValidationCache.slice(1);
+      visaValidationCache.slice(1);
+    }
     logger.info({size: visaValidationCache.length}, 'cache');
-    return { card_type: cardType, valid: isValid };
+    return { card_type: cardType, valid: isValid, cached: false };
   } else {
     const isValid = isValidCardNumber(number);
     return { card_type: cardType, valid: isValid, cached: false };
@@ -64,8 +70,6 @@ function random(arr) {
 }
 
 module.exports.charge = async request => {
-  const span = tracer.startSpan('charge');
-
   await OpenFeature.setProviderAndWait(flagProvider);
 
   const numberVariant = await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
@@ -74,9 +78,9 @@ module.exports.charge = async request => {
   if (numberVariant > 0) {
     // n% chance to fail with app.loyalty.level=gold
     if (Math.random() < numberVariant) {
-      span.setAttributes({'app.loyalty.level': 'gold' });
-      span.end();
-
+      HyperDX.setTraceAttributes({
+        'app.loyalty.level': 'gold'
+      });
       throw new Error('Payment request failed. Invalid token. app.loyalty.level=gold');
     }
   }
@@ -96,7 +100,7 @@ module.exports.charge = async request => {
 
   const loyalty_level = random(LOYALTY_LEVEL);
 
-  span.setAttributes({
+  HyperDX.setTraceAttributes({
     'app.payment.card_type': cardType,
     'app.payment.card_valid': valid,
     'app.loyalty.level': loyalty_level
@@ -113,19 +117,18 @@ module.exports.charge = async request => {
   if ((currentYear * 12 + currentMonth) > (year * 12 + month)) {
     throw new Error(`The credit card (ending ${lastFourDigits}) expired on ${month}/${year}.`);
   }
-
-  // Check baggage for synthetic_request=true, and add charged attribute accordingly
-  const baggage = propagation.getBaggage(context.active());
-  if (baggage && baggage.getEntry('synthetic_request') && baggage.getEntry('synthetic_request').value === 'true') {
-    span.setAttribute('app.payment.charged', false);
-  } else {
-    span.setAttribute('app.payment.charged', true);
-  }
+  
 
   const { units, nanos, currencyCode } = request.amount;
-  logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level, cached }, 'Transaction complete.');
-  transactionsCounter.add(1, { 'app.payment.currency': currencyCode });
-  span.end();
+  transactionsCounter[currencyCode] = (transactionsCounter[currencyCode] || 0) + 1;
+  HyperDX.setTraceAttributes({
+    'app.payment.charged': true,
+    'app.payment.currency': currencyCode,
+    'app.payment.timestamp': Date.now(),
+    'app.payment.transactions': transactionsCounter[currencyCode]
+  });
 
+  logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level, cached }, 'Transaction complete.');
+  
   return { transactionId };
 };

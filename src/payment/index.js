@@ -17,13 +17,13 @@ async function chargeServiceHandler(call, callback) {
       'app.payment.amount': parseFloat(`${amount.units}.${amount.nanos}`).toFixed(2)
     });
 
-    logger.info({ request: call.request }, "Charge request received.")
+    logger.info("Charge request received.", { request: call.request })
     
     const response = await charge.charge(call.request)
     callback(null, response)
 
   } catch (err) {
-    logger.error({ err })
+    logger.error(err)
     HyperDX.recordException(err)
     callback(err)
   }

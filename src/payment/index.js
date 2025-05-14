@@ -18,7 +18,7 @@ async function chargeServiceHandler(call, callback) {
     });
 
     logger.info({ request: call.request }, "Charge request received.")
-
+    
     const response = await charge.charge(call.request)
     callback(null, response)
 

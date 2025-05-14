@@ -128,6 +128,7 @@ module.exports.charge = async request => {
     'app.payment.transactions': transactionsCounter[currencyCode]
   });
 
+
   logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level, cached }, 'Transaction complete.');
   
   return { transactionId };

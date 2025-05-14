@@ -23,7 +23,7 @@ async function chargeServiceHandler(call, callback) {
     callback(null, response)
 
   } catch (err) {
-    logger.warn({ err })
+    logger.error({ err })
     HyperDX.recordException(err)
     callback(err)
   }

@@ -4,9 +4,11 @@ const { v4: uuidv4 } = require('uuid');
 
 const { OpenFeature } = require('@openfeature/server-sdk');
 const { FlagdProvider } = require('@openfeature/flagd-provider');
+const { metrics } = require('@opentelemetry/api');
 //const { context, propagation, trace, metrics } = require('@opentelemetry/api');
 
 const flagProvider = new FlagdProvider();
+
 
 const logger = require('./logger');
 //const tracer = trace.getTracer('payment');
@@ -15,6 +17,21 @@ const HyperDX = require('@hyperdx/node-opentelemetry');
 
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
 const CACHE_SIZE = process.env.CACHE_SIZE || 1000;
+
+const meter = metrics.getMeter('payment.card_validator');
+
+// Create an observable gauge to track the cache size
+const visaCacheGauge = meter.createObservableGauge('visa_validation_cache.size', {
+  description: 'Size of the Visa validation cache',
+  unit: 'entries'
+});
+
+
+visaCacheGauge.addCallback((observableResult) => {
+  observableResult.observe(visaValidationCache.length);
+});
+
+
 
 // Custom credit card validator with unbounded cache (deliberate memory leak)
 const visaValidationCache = [];
@@ -58,6 +75,7 @@ function validateCreditCard(number, cache) {
       // BUG: Looks like eviction, but doesn't affect the original array - should be visaValidationCache = visaValidationCache.slice(1);
       visaValidationCache.slice(1);
     }
+
     logger.info('cache', {size: visaValidationCache.length});
     return { card_type: cardType, valid: isValid, cached: false };
   } else {
@@ -89,6 +107,9 @@ module.exports.charge = async request => {
       throw new Error('Payment request failed. Invalid token. app.loyalty.level=gold');
     }
   }
+
+  const transactionsCounter = meter.createCounter('app.payment.transactions');
+
 
   const {
     creditCardNumber: number,
@@ -136,5 +157,6 @@ module.exports.charge = async request => {
 
   logger.info('Transaction complete.', { transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level, cached });
   //span.end();
+  transactionsCounter.add(1, { 'app.payment.currency': currencyCode });
   return { transactionId };
 };

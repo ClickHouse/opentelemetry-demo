@@ -138,5 +138,22 @@ service:
     metrics:
       receivers: [hostmetrics, docker_stats, httpcheck/frontend-proxy, otlp, prometheus, redis]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse]
-
+      exporters: [clickhouse, file]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse, file]
+    logs/out-default:
+      receivers: [routing/logs]
+      processors: [memory_limiter, transform, batch]
+      exporters: [clickhouse, file]
+    logs/out-rrweb:
+      receivers: [routing/logs]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse/rrweb, file]
+exporters:
+  file:
+    path: /data/sample.json
+    rotation:
+      max_megabytes: 10000
+      localtime: true

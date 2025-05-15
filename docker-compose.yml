@@ -273,6 +273,7 @@ services:
       - "${FRONTEND_PORT}"
     environment:
       - PORT=${FRONTEND_PORT}
+      - CACHE_SIZE=10
       - FRONTEND_ADDR
       - AD_ADDR
       - CART_ADDR
@@ -755,7 +756,8 @@ services:
     volumes:
       - ${HOST_FILESYSTEM}:/hostfs:ro
       - ${DOCKER_SOCK}:/var/run/docker.sock:ro
-      - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-contrib/config-extras.yaml   
+      - ${OTEL_COLLECTOR_CONFIG_EXTRAS}:/etc/otelcol-contrib/config-extras.yaml
+      - .volumes/otel_data:/data/
     depends_on:
       clickhouse:
         condition: service_healthy

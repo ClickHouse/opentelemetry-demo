@@ -273,7 +273,7 @@ services:
       - "${FRONTEND_PORT}"
     environment:
       - PORT=${FRONTEND_PORT}
-      - CACHE_SIZE=10
+      - CACHE_SIZE=25
       - FRONTEND_ADDR
       - AD_ADDR
       - CART_ADDR

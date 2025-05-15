@@ -1813,10 +1813,10 @@ spec:
               value: https://oteldemo.s3.eu-west-3.amazonaws.com
           resources:
             requests:
-              cpu: 100m
+              cpu: 1000m
               memory: 250Mi
             limits:
-              cpu: 1000m
+              cpu: 2000m
               memory: 500Mi
           securityContext:
             runAsGroup: 1001
@@ -1913,10 +1913,10 @@ spec:
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
           resources:
             requests:
-              cpu: 50m
-              memory: 50Mi
-            limits:
               cpu: 500m
+              memory: 100Mi
+            limits:
+              cpu: 1000m
               memory: 200Mi
           securityContext:
             runAsGroup: 101
@@ -2251,9 +2251,11 @@ spec:
             - name: FLAGD_PORT
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(OTEL_COLLECTOR_NAME):4317
+              value: http://$(OTEL_COLLECTOR_NAME):4318
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2
+            - name: CACHE_SIZE
+              value: "150000"
           resources:
             requests:
               cpu: 100m
@@ -2839,6 +2841,11 @@ data:
         collection_interval: 10s
     
     processors:
+      resource/promote_service_name:
+        attributes:
+          - action: upsert
+            key: service.name
+            from_attribute: app.kubernetes.io/component
       transform:
         log_statements:
           - context: log
@@ -2863,7 +2870,7 @@ data:
               - set(log.severity_number, SEVERITY_NUMBER_FATAL) where IsMatch(log.cache["0"], "(?i)(alert|crit|emerg|fatal)")
               - set(log.severity_text, "fatal") where log.severity_number == SEVERITY_NUMBER_FATAL
               # Infer: detect ERROR
-              - set(log.severity_number, SEVERITY_NUMBER_ERROR) where IsMatch(log.cache["0"], "(?i)(error|err)")
+              - set(log.severity_number, SEVERITY_NUMBER_ERROR) where IsMatch(log.cache["0"], "(?i)(error)")
               - set(log.severity_text, "error") where log.severity_number == SEVERITY_NUMBER_ERROR
               # Infer: detect WARN
               - set(log.severity_number, SEVERITY_NUMBER_WARN) where IsMatch(log.cache["0"], "(?i)(warn|notice)")
@@ -2889,6 +2896,10 @@ data:
           metrics:
             receivers: [otlp]
             processors: [memory_limiter, batch]
+            exporters: [clickhouse]
+          logs/out-default:
+            receivers: [routing/logs]
+            processors: [memory_limiter, transform, resource/promote_service_name, batch]
             exporters: [clickhouse]
 ---
 # OpenTelemetry Collector Deployment

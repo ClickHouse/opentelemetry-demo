@@ -1989,7 +1989,7 @@ spec:
             - name: OTEL_COLLECTOR_HOST
               value: $(OTEL_COLLECTOR_NAME)
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(OTEL_COLLECTOR_NAME):4317
+              value: http://$(OTEL_COLLECTOR_NAME):4318
             - name: WEB_OTEL_SERVICE_NAME
               value: frontend-web
             - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
@@ -2021,6 +2021,8 @@ spec:
             - name: IMAGE_BASE_URL
               value: https://oteldemo.s3.eu-west-3.amazonaws.com
             - name: HDX_NODE_EXPERIMENTAL_EXCEPTION_CAPTURE
+              value: "1"
+            - name: HDX_NODE_BETA_MODE
               value: "1"
             - name: ENV_PLATFORM
               value: "local"
@@ -2569,7 +2571,11 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
             - name: CACHE_SIZE
-              value: "150000"
+              value: "100000"
+            - name: HDX_NODE_EXPERIMENTAL_EXCEPTION_CAPTURE
+              value: "1"
+            - name: HDX_NODE_BETA_MODE
+              value: "1"
           resources:
             requests:
               cpu: 50m

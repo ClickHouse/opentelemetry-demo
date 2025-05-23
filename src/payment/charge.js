@@ -4,14 +4,13 @@ const { v4: uuidv4 } = require('uuid');
 
 const { OpenFeature } = require('@openfeature/server-sdk');
 const { FlagdProvider } = require('@openfeature/flagd-provider');
-const { metrics } = require('@opentelemetry/api');
-//const { context, propagation, trace, metrics } = require('@opentelemetry/api');
+const { metrics, trace } = require('@opentelemetry/api');
 
 const flagProvider = new FlagdProvider();
 
 
 const logger = require('./logger');
-//const tracer = trace.getTracer('payment');
+const tracer = trace.getTracer('payment');
 const transactionsCounter = {}
 const HyperDX = require('@hyperdx/node-opentelemetry');
 
@@ -77,6 +76,9 @@ function validateCreditCard(number, cache) {
     }
 
     logger.info('cache', {size: visaValidationCache.length});
+    HyperDX.setTraceAttributes({
+      'cache.size': visaValidationCache.length
+    });
     return { card_type: cardType, valid: isValid, cached: false };
   } else {
     const isValid = isValidCardNumber(number);
@@ -91,7 +93,7 @@ function random(arr) {
 }
 
 module.exports.charge = async request => {
-  //const span = tracer.startSpan('charge');
+  const span = tracer.startSpan('charge');
 
   await OpenFeature.setProviderAndWait(flagProvider);
 
@@ -156,7 +158,7 @@ module.exports.charge = async request => {
 
 
   logger.info('Transaction complete.', { transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level, cached });
-  //span.end();
+  span.end();
   transactionsCounter.add(1, { 'app.payment.currency': currencyCode });
   return { transactionId };
 };

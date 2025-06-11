@@ -42,13 +42,18 @@ export const InputRow = styled.div`
   margin-bottom: 24px;
 `;
 
-export const Arrow = styled.img.attrs({
-  src: '/icons/Chevron.svg',
+interface ArrowProps {
+  baseUrl: string;
+}
+
+export const Arrow = styled.img.attrs<ArrowProps>(props => ({
+  src: `${props.baseUrl}/icons/Chevron.svg`,
   alt: 'arrow',
-})`
+}))<ArrowProps>`
   position: absolute;
   right: 20px;
   width: 10px;
   height: 5px;
   top: 64px;
 `;
+

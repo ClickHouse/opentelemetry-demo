@@ -14,6 +14,11 @@ interface IProps {
   productList: IProductCartItem[];
 }
 
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
+
 const CartDropdown = ({ productList, isOpen, onClose }: IProps) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -44,7 +49,7 @@ const CartDropdown = ({ productList, isOpen, onClose }: IProps) => {
           {productList.map(
             ({ quantity, product: { name, picture, id, priceUsd = { nanos: 0, currencyCode: 'USD', units: 0 } } }) => (
               <S.Item key={id} data-cy={CypressFields.CartDropdownItem}>
-                <S.ItemImage src={"/images/products/" + picture} alt={name} />
+                <S.ItemImage src={`${IMAGE_BASE_URL}/images/products/` + picture} alt={name} />
                 <S.ItemDetails>
                   <S.ItemName>{name}</S.ItemName>
                   <ProductPrice price={priceUsd} />

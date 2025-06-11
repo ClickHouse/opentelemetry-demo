@@ -24,6 +24,8 @@ const {
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = '',
   OTEL_SERVICE_NAME = 'frontend',
   PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = '',
+  PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = '',
+  IMAGE_BASE_URL = ''
 } = process.env;
 
 const nextConfig = {
@@ -55,10 +57,13 @@ const nextConfig = {
     NEXT_PUBLIC_PLATFORM: ENV_PLATFORM,
     NEXT_PUBLIC_OTEL_SERVICE_NAME: OTEL_SERVICE_NAME,
     NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+    PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT,
+    IMAGE_BASE_URL: IMAGE_BASE_URL,
   },
   images: {
     loader: "custom",
-    loaderFile: "./utils/imageLoader.js"
+    loaderFile: "./utils/imageLoader.js",
+    domains: [IMAGE_BASE_URL.replace(/^https?:\/\//, '').split('/')[0]],
   }
 };
 

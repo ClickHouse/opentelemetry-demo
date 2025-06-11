@@ -14,6 +14,7 @@ import { CypressFields } from '../utils/Cypress';
 import { useCurrency } from '../providers/Currency.provider';
 
 const Home: NextPage = () => {
+
   const { selectedCurrency } = useCurrency();
   const { data: productList = [] } = useQuery({
     queryKey: ['products', selectedCurrency],

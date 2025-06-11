@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import { CypressFields } from '../../utils/Cypress';
 import Input from '../Input';
 import * as S from './CheckoutForm.styled';
+import HyperDX from '@hyperdx/browser';
 
 const currentYear = new Date().getFullYear();
 const yearList = Array.from(new Array(20), (v, i) => i + currentYear);
@@ -66,6 +67,10 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
     <S.CheckoutForm
       onSubmit={(event: { preventDefault: () => void; }) => {
         event.preventDefault();
+        HyperDX.setGlobalAttributes({
+          userEmail: email,
+          userId: email,
+        });
         onSubmit({
           email,
           streetAddress,

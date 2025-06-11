@@ -4,37 +4,156 @@
 # extra settings to be merged into OpenTelemetry Collector configuration
 # do not delete this file
 
-exporters:
-  clickhouse:
-    endpoint: tcp://clickhouse:9000?dial_timeout=10s&compress=lz4&async_insert=1
-    ttl: 72h
-    traces_table_name: otel_traces
-    logs_table_name: otel_logs
-    create_schema: true
-    timeout: 5s
-    database: default
-    retry_on_failure:
-      enabled: true
-      initial_interval: 5s
-      max_interval: 30s
-      max_elapsed_time: 300s
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: ${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_GRPC}
+        include_metadata: true
+      http:
+        endpoint: ${env:OTEL_COLLECTOR_HOST}:${env:OTEL_COLLECTOR_PORT_HTTP}
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+        include_metadata: true
+  httpcheck/frontend-proxy:
+    targets:
+      - endpoint: http://frontend-proxy:${env:ENVOY_PORT}
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+  redis:
+    endpoint: "valkey-cart:6379"
+    username: "valkey"
+    collection_interval: 10s
+  # Host metrics
+  hostmetrics:
+    root_path: /hostfs
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      disk:
+      load:
+      filesystem:
+        exclude_mount_points:
+          mount_points:
+            - /dev/*
+            - /proc/*
+            - /sys/*
+            - /run/k3s/containerd/*
+            - /var/lib/docker/*
+            - /var/lib/kubelet/*
+            - /snap/*
+          match_type: regexp
+        exclude_fs_types:
+          fs_types:
+            - autofs
+            - binfmt_misc
+            - bpf
+            - cgroup2
+            - configfs
+            - debugfs
+            - devpts
+            - devtmpfs
+            - fusectl
+            - hugetlbfs
+            - iso9660
+            - mqueue
+            - nsfs
+            - overlay
+            - proc
+            - procfs
+            - pstore
+            - rpc_pipefs
+            - securityfs
+            - selinuxfs
+            - squashfs
+            - sysfs
+            - tracefs
+          match_type: strict
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      network:
+      paging:
+      processes:
+      process:
+        mute_process_exe_error: true
+        mute_process_io_error: true
+        mute_process_user_error: true
 
 processors:
-  batch:
-    timeout: 5s
-    send_batch_size: 5000
 
+  transform:
+    log_statements:
+      - context: log
+        error_mode: ignore
+        statements:
+          # JSON parsing: Extends log attributes with the fields from structured log body content, either as an OTEL map or
+          # as a string containing JSON content.
+          - set(log.cache, ExtractPatterns(log.body, "(?P<0>(\\{.*\\}))")) where IsString(log.body)
+          - merge_maps(log.attributes, ParseJSON(log.cache["0"]), "upsert") where IsMap(log.cache) and IsString(log.cache["0"]) and IsMatch(log.cache["0"], "^{\\s*\\{.*\\}\\s*}$")
+          - flatten(log.attributes) where IsMap(log.cache)
+          - merge_maps(log.attributes, log.body, "upsert") where IsMap(log.body)
+      - context: log
+        error_mode: ignore
+        conditions:
+          - severity_number == 0 and severity_text == ""
+        statements:
+          # Infer: extract the first log level keyword from the first 256 characters of the body
+          - set(log.cache["substr"], log.body.string) where Len(log.body.string) < 256
+          - set(log.cache["substr"], Substring(log.body.string, 0, 256)) where Len(log.body.string) >= 256
+          - set(log.cache, ExtractPatterns(log.cache["substr"], "(?i)(?P<0>(alert|crit|emerg|fatal|error|err|warn|notice|debug|dbug|trace))"))
+          # Infer: detect FATAL
+          - set(log.severity_number, SEVERITY_NUMBER_FATAL) where IsMatch(log.cache["0"], "(?i)(alert|crit|emerg|fatal)")
+          - set(log.severity_text, "fatal") where log.severity_number == SEVERITY_NUMBER_FATAL
+          # Infer: detect ERROR
+          - set(log.severity_number, SEVERITY_NUMBER_ERROR) where IsMatch(log.cache["0"], "(?i)(error|err)")
+          - set(log.severity_text, "error") where log.severity_number == SEVERITY_NUMBER_ERROR
+          # Infer: detect WARN
+          - set(log.severity_number, SEVERITY_NUMBER_WARN) where IsMatch(log.cache["0"], "(?i)(warn|notice)")
+          - set(log.severity_text, "warn") where log.severity_number == SEVERITY_NUMBER_WARN
+          # Infer: detect DEBUG
+          - set(log.severity_number, SEVERITY_NUMBER_DEBUG) where IsMatch(log.cache["0"], "(?i)(debug|dbug)")
+          - set(log.severity_text, "debug") where log.severity_number == SEVERITY_NUMBER_DEBUG
+          # Infer: detect TRACE
+          - set(log.severity_number, SEVERITY_NUMBER_TRACE) where IsMatch(log.cache["0"], "(?i)(trace)")
+          - set(log.severity_text, "trace") where log.severity_number == SEVERITY_NUMBER_TRACE
+          # Infer: else
+          - set(log.severity_text, "info") where log.severity_number == 0
+          - set(log.severity_number, SEVERITY_NUMBER_INFO) where log.severity_number == 0
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          # could be removed when https://github.com/vercel/next.js/pull/64852 is fixed upstream
+          - replace_pattern(name, "\\?.*", "")
+          - replace_match(name, "GET /api/products/*", "GET /api/products/{productId}")
+    
 service:
   pipelines:
+    metrics:
+      receivers: [hostmetrics, docker_stats, httpcheck/frontend-proxy, otlp, prometheus, redis]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse, file]
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, transform, batch]
-      exporters: [clickhouse, spanmetrics]
-    logs:
-      receivers: [otlp]
-      processors: [memory_limiter, transform, batch]
-      exporters: [clickhouse]
-    metrics:
-      receivers: [hostmetrics, docker_stats, httpcheck/frontend-proxy, otlp, redis, spanmetrics]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/prometheus]
+      exporters: [clickhouse, file]
+    logs/out-default:
+      receivers: [routing/logs]
+      processors: [memory_limiter, transform, batch]
+      exporters: [clickhouse, file]
+    logs/out-rrweb:
+      receivers: [routing/logs]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse/rrweb, file]
+exporters:
+  file:
+    path: /data/sample.json
+    rotation:
+      max_megabytes: 10000
+      localtime: true

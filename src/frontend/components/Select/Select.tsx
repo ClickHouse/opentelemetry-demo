@@ -8,11 +8,16 @@ interface IProps extends InputHTMLAttributes<HTMLSelectElement> {
   children: React.ReactNode;
 }
 
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
+
 const Select = ({ children, ...props }: IProps) => {
   return (
     <S.SelectContainer>
       <S.Select {...props}>{children}</S.Select>
-      <S.Arrow />
+      <S.Arrow baseUrl={IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'}/>
     </S.SelectContainer>
   );
 };

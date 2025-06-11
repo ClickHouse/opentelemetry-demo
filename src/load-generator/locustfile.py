@@ -9,6 +9,7 @@ import os
 import random
 import uuid
 import logging
+import re
 
 from locust import HttpUser, task, between
 from locust_plugins.users.playwright import PlaywrightUser, pw, PageWithRetry, event
@@ -104,6 +105,43 @@ products = [
 people_file = open('people.json')
 people = json.load(people_file)
 
+
+def format_card_number(number: str) -> str:
+    return re.sub(r'(\d{4})(?=\d)', r'\1-', number)
+
+def get_luhn_check_digit(number_without_check_digit: str) -> str:
+    digits = [int(d) for d in (number_without_check_digit + '0')][::-1]
+    total = 0
+
+    for i, digit in enumerate(digits):
+        if i % 2 == 1:  # double every second digit from the right
+            digit *= 2
+            if digit > 9:
+                digit -= 9
+        total += digit
+
+    mod = total % 10
+    return '0' if mod == 0 else str(10 - mod)
+
+def generate_valid_visa_number() -> str:
+    number = '4' + ''.join(str(random.randint(0, 9)) for _ in range(14))
+    check_digit = get_luhn_check_digit(number)
+    return format_card_number(number + check_digit)
+
+def generate_valid_mastercard_number() -> str:
+    bin_prefixes = ['2221', '2222', '2223', '2230', '5100', '5200', '5300', '5400', '5500']
+    prefix = random.choice(bin_prefixes)
+    number = prefix + ''.join(str(random.randint(0, 9)) for _ in range(15 - len(prefix)))
+    check_digit = get_luhn_check_digit(number)
+    return format_card_number(number + check_digit)
+
+def generate_credit_card() -> str:
+    if random.random() < 0.8:
+        return generate_valid_visa_number()
+    else:
+        return generate_valid_mastercard_number()
+
+
 class WebsiteUser(HttpUser):
     wait_time = between(1, 10)
 
@@ -155,6 +193,8 @@ class WebsiteUser(HttpUser):
         self.add_to_cart(user=user)
         checkout_person = random.choice(people)
         checkout_person["userId"] = user
+        # generate a valid credit card number
+        checkout_person["creditCard"]["creditCardNumber"] = generate_credit_card()
         self.client.post("/api/checkout", json=checkout_person)
 
     @task(1)
@@ -165,6 +205,8 @@ class WebsiteUser(HttpUser):
             self.add_to_cart(user=user)
         checkout_person = random.choice(people)
         checkout_person["userId"] = user
+        # generate a valid credit card number
+        checkout_person["creditCard"]["creditCardNumber"] = generate_credit_card()
         self.client.post("/api/checkout", json=checkout_person)
 
     @task(5)

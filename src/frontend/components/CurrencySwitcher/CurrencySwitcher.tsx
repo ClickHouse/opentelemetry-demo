@@ -7,6 +7,11 @@ import { useCurrency } from '../../providers/Currency.provider';
 import * as S from './CurrencySwitcher.styled';
 import { CypressFields } from '../../utils/Cypress';
 
+const IMAGE_BASE_URL =
+  typeof window !== 'undefined' && window.ENV?.IMAGE_BASE_URL
+    ? window.ENV.IMAGE_BASE_URL
+    : process.env.IMAGE_BASE_URL;
+
 const CurrencySwitcher = () => {
   const { currencyCodeList, setSelectedCurrency, selectedCurrency } = useCurrency();
 
@@ -28,7 +33,7 @@ const CurrencySwitcher = () => {
             </option>
           ))}
         </S.Select>
-        <S.Arrow />
+        <S.Arrow baseUrl={IMAGE_BASE_URL || 'https://oteldemo.s3.eu-west-3.amazonaws.com'} />
       </S.Container>
     </S.CurrencySwitcher>
   );

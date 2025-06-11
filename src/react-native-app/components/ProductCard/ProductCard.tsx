@@ -18,7 +18,7 @@ interface IProps {
 
 async function getImageURL(picture: string) {
   const localhost = await getLocalhost();
-  return `http://${localhost}:${process.env.EXPO_PUBLIC_FRONTEND_PROXY_PORT}/images/products/${picture}`;
+  return `${process.env.IMAGE_BASE_URL}/images/products/${picture}`;
 }
 
 const ProductCard = ({

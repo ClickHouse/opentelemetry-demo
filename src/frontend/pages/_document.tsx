@@ -5,7 +5,8 @@ import Document, { DocumentContext, Html, Head, Main, NextScript } from 'next/do
 import { ServerStyleSheet } from 'styled-components';
 import {context, propagation} from "@opentelemetry/api";
 
-const { ENV_PLATFORM, WEB_OTEL_SERVICE_NAME, PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_COLLECTOR_HOST} = process.env;
+const { ENV_PLATFORM, WEB_OTEL_SERVICE_NAME, PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_COLLECTOR_HOST, 
+  PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT, IMAGE_BASE_URL} = process.env;
 
 export default class MyDocument extends Document<{ envString: string }> {
   static async getInitialProps(ctx: DocumentContext) {
@@ -32,6 +33,8 @@ export default class MyDocument extends Document<{ envString: string }> {
           NEXT_PUBLIC_OTEL_SERVICE_NAME: '${WEB_OTEL_SERVICE_NAME}',
           NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: '${otlpTracesEndpoint}',
           IS_SYNTHETIC_REQUEST: '${isSyntheticRequest}',
+          PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: '${PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT}',
+          IMAGE_BASE_URL: '${IMAGE_BASE_URL}',
         };`;
       return {
         ...initialProps,

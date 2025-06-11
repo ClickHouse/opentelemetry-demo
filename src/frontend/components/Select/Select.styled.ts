@@ -19,10 +19,14 @@ export const SelectContainer = styled.div`
   width: min-content;
 `;
 
-export const Arrow = styled.img.attrs({
-  src: '/icons/Chevron.svg',
+interface ArrowProps {
+  baseUrl: string;
+}
+
+export const Arrow = styled.img.attrs<ArrowProps>(props => ({
+  src: `${props.baseUrl}/icons/Chevron.svg`,
   alt: 'select',
-})`
+}))<ArrowProps>`
   position: absolute;
   right: 25px;
   top: 20px;

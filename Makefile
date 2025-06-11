@@ -116,12 +116,12 @@ remove-multiplatform-builder:
 .PHONY: build-multiplatform
 build-multiplatform:
 	# Because buildx bake does not support --env-file yet, we need to load it into the environment first.
-	set -a; . ./.env.override; set +a && docker buildx bake -f docker-compose.yml --load --set "*.platform=linux/amd64,linux/arm64"
+	set -a; . ./.env.override; set +a && docker buildx bake -f docker-compose.yml --load --set "*.platform=linux/amd64"
 
 .PHONY: build-multiplatform-and-push
 build-multiplatform-and-push:
     # Because buildx bake does not support --env-file yet, we need to load it into the environment first.
-	set -a; . ./.env.override; set +a && docker buildx bake -f docker-compose.yml --push --set "*.platform=linux/amd64,linux/arm64"
+	set -a; . ./.env.override; set +a && docker buildx bake --no-cache -f docker-compose.yml --push --set "*.platform=linux/amd64"
 
 .PHONY: clean-images
 clean-images:
@@ -187,7 +187,7 @@ start:
 	@echo ""
 	@echo "OpenTelemetry Demo is running."
 	@echo "Go to http://localhost:8080 for the demo UI."
-	@echo "Go to http://localhost:8080/jaeger/ui for the Jaeger UI."
+	@echo "Go to http://localhost:9080/ for the HyperDX."
 	@echo "Go to http://localhost:8080/grafana/ for the Grafana UI."
 	@echo "Go to http://localhost:8080/loadgen/ for the Load Generator UI."
 	@echo "Go to http://localhost:8080/feature/ to change feature flags."

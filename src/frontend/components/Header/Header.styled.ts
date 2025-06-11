@@ -42,9 +42,14 @@ export const NavBarBrand = styled(Link)`
   padding: 0;
 `;
 
-export const BrandImg = styled.img.attrs({
-  src: '/images/opentelemetry-demo-logo.png',
-})`
+
+interface BrandImgProps {
+  baseUrl: string;
+}
+
+export const BrandImg = styled.img.attrs<BrandImgProps>(props => ({
+  src: `${props.baseUrl}/images/opentelemetry-demo-logo.png`,
+}))<BrandImgProps>`
   width: 280px;
   height: auto;
 `;

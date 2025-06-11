@@ -34,7 +34,7 @@ composer.lock
 .venv
 .dockerhub.env
 .ghcr.env
-
+.volumes
 src/frontend/cypress/videos
 src/frontend/cypress/screenshots
 src/shipping/target/
@@ -47,8 +47,10 @@ test/tracetesting/tracetesting-vars.yaml
 /src/payment/demo.proto
 /src/shipping/proto/
 /src/currency/proto
-
+sample/**
 # Android
 *.apk
+sample.tar.gz
+source.tar.gz
 
 !src/currency/build

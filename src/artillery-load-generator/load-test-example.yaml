@@ -1,0 +1,17 @@
+config:
+  target: "http://localhost:8080"  # dummy value
+  phases:
+    - arrivalCount: 1  # Total of 2 users over 60s
+      duration: 1
+  engines:
+    playwright:
+      launchOptions:
+        headless: false
+        args:
+          - "--start-maximized"
+      contextOptions:
+        viewport: null  # Allows fullscreen sizing
+  processor: flows.js
+scenarios:
+  - engine: playwright
+    testFunction: simulateUser

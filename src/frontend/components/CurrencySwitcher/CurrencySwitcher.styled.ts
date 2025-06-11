@@ -35,10 +35,14 @@ export const SelectedConcurrency = styled.span`
   display: inline-block;
 `;
 
-export const Arrow = styled.img.attrs({
-  src: '/icons/Chevron.svg',
+interface ArrowProps {
+  baseUrl: string;
+}
+
+export const Arrow = styled.img.attrs<ArrowProps>(props => ({
+  src: `${props.baseUrl}/icons/Chevron.svg`,
   alt: 'arrow',
-})`
+}))<ArrowProps>`
   position: absolute;
   right: 15px;
   width: 12px;

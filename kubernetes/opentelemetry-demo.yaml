@@ -1133,13 +1133,21 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: KAFKA_ADDR
               value: kafka:9092
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -1225,7 +1233,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: AD_PORT
@@ -1236,6 +1244,14 @@ spec:
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: OTEL_LOGS_EXPORTER
               value: otlp
             - name: POD_NAME
@@ -1316,7 +1332,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: CART_PORT
@@ -1331,6 +1347,14 @@ spec:
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -1417,7 +1441,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: CHECKOUT_PORT
@@ -1442,6 +1466,14 @@ spec:
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -1527,13 +1559,21 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: CURRENCY_PORT
               value: "8080"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: VERSION
               value: '2.0.2'
             - name: POD_NAME
@@ -1614,7 +1654,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: EMAIL_PORT
@@ -1712,7 +1752,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: FLAGD_METRICS_EXPORTER
@@ -1765,13 +1805,21 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: FLAGD_METRICS_EXPORTER
               value: otel
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -1865,7 +1913,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: KAFKA_ADDR
@@ -1876,6 +1924,14 @@ spec:
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -1961,7 +2017,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: FRONTEND_PORT
@@ -1990,12 +2046,22 @@ spec:
               value: $(OTEL_COLLECTOR_NAME)
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: WEB_OTEL_SERVICE_NAME
               value: frontend-web
             - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
               value: http://localhost:8080/otlp-http/v1/traces
             - name: PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://otel-collector:4318
+              value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: PUBLIC_OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2028,7 +2094,7 @@ spec:
               value: "local"
           resources:
             requests:
-              cpu: 1000m
+              cpu: 300m
               memory: 250Mi
             limits:
               cpu: 2000m
@@ -2082,7 +2148,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: ENVOY_PORT
@@ -2145,7 +2211,7 @@ spec:
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 500m
+              cpu: 300m
               memory: 100Mi
             limits:
               cpu: 1000m
@@ -2203,7 +2269,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: IMAGE_PROVIDER_PORT
@@ -2292,13 +2358,21 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: KAFKA_ADVERTISED_LISTENERS
               value: PLAINTEXT://kafka:9092
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: KAFKA_HEAP_OPTS
               value: -Xmx400M -Xms400M
             - name: POD_NAME
@@ -2383,7 +2457,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: LOCUST_WEB_HOST
@@ -2410,6 +2484,14 @@ spec:
               value: "8016"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2537,7 +2619,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: PAYMENT_PORT
@@ -2548,6 +2630,14 @@ spec:
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2636,7 +2726,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: PRODUCT_CATALOG_PORT
@@ -2649,6 +2739,14 @@ spec:
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2732,7 +2830,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: QUOTE_PORT
@@ -2741,6 +2839,14 @@ spec:
               value: "true"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2823,7 +2929,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: RECOMMENDATION_PORT
@@ -2840,6 +2946,14 @@ spec:
               value: "8013"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2918,7 +3032,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: SHIPPING_PORT
@@ -2927,6 +3041,14 @@ spec:
               value: http://quote:8080
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -3005,7 +3127,7 @@ spec:
                   apiVersion: v1
                   fieldPath: metadata.labels['app.kubernetes.io/component']
             - name: OTEL_COLLECTOR_NAME
-              value: otel-collector
+              value: my-hyperdx-hdx-oss-v2-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
             - name: POD_NAME
@@ -3043,463 +3165,3 @@ spec:
             runAsUser: 999
           volumeMounts:
       volumes:
----
-# MongoDB Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: hyperdx-db
-  labels:
-    app: hyperdx-db
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: hyperdx-db
-  template:
-    metadata:
-      labels:
-        app: hyperdx-db
-    spec:
-      containers:
-      - name: mongodb
-        image: mongo:5.0.14-focal
-        ports:
-        - containerPort: 27017
-          name: mongodb
-        volumeMounts:
-        - name: mongodb-data
-          mountPath: /data/db
-      volumes:
-      - name: mongodb-data
-        persistentVolumeClaim:
-          claimName: mongodb-data-pvc
----
-# MongoDB Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: hyperdx-db
-spec:
-  selector:
-    app: hyperdx-db
-  ports:
-  - name: mongodb
-    port: 27017
-    targetPort: 27017
-  type: ClusterIP
----
-# MongoDB PVC
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mongodb-data-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi  # Adjust size as needed
-
-
----
-# HyperDX ConfigMap for environment variables
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: hyperdx-config
-data:
-  HYPERDX_LOG_LEVEL: "info"  # Default value, adjust as needed
-  ENVOY_PORT: "8080"  # Default value, adjust as needed
-  HOST_FILESYSTEM: "/var/log"  # Default value, adjust as needed
-  OTEL_COLLECTOR_PORT_GRPC: "4317"
-  OTEL_COLLECTOR_PORT_HTTP: "4318"
-  HYPERDX_API_PORT: "8000"  # Default value, adjust as needed
-  HYPERDX_APP_PORT: "9080"  # Default value, adjust as needed
-  HYPERDX_APP_URL: "http://localhost"  # Default value, adjust as needed
-  FRONTEND_URL: "http://localhost:9080"  # Default value, adjust as needed
-  USAGE_STATS_ENABLED: "true"  # Default value, adjust as needed
----
-# HyperDX Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: hyperdx
-  labels:
-    app: hyperdx
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: hyperdx
-
-  template:
-    metadata:
-      labels:
-        app: hyperdx
-    spec:
-      containers:
-      - name: hyperdx
-        image: docker.hyperdx.io/hyperdx/hyperdx:2-beta.16
-        resources:
-          requests:
-            cpu: "500m"     
-            memory: "512Mi" 
-          limits:
-            cpu: "1000m"    
-            memory: "1Gi"
-        ports:
-        - containerPort: 4318
-          name: otlp
-        - containerPort: 8000
-          name: api
-        - containerPort: 9080
-          name: app
-        env:
-        - name: FRONTEND_URL
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: FRONTEND_URL
-        - name: HYPERDX_API_KEY
-          value: ""
-        - name: HYPERDX_API_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: HYPERDX_API_PORT
-        - name: HYPERDX_APP_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: HYPERDX_APP_PORT
-        - name: HYPERDX_APP_URL
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: HYPERDX_APP_URL
-        - name: HYPERDX_LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: HYPERDX_LOG_LEVEL
-        - name: MINER_API_URL
-          value: "http://miner:5123"
-        - name: MONGO_URI
-          value: "mongodb://hyperdx-db:27017/hyperdx"
-        - name: NEXT_PUBLIC_SERVER_URL
-          value: "http://127.0.0.1:8000"
-        - name: OTEL_SERVICE_NAME
-          value: "hdx-oss-api"
-        - name: USAGE_STATS_ENABLED
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: USAGE_STATS_ENABLED
----
-# HyperDX Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: hyperdx
-spec:
-  selector:
-    app: hyperdx
-  ports:
-  - name: otlp
-    port: 4318
-    targetPort: 4318
-  - name: api
-    port: 8000
-    targetPort: 8000
-  - name: app
-    port: 9080
-    targetPort: 9080
-  type: ClusterIP
----
-# OpenTelemetry Collector ConfigMap
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: otel-collector-config-extras
-data:
-  config-extras.yaml: |
-    # Copyright The OpenTelemetry Authors
-    # SPDX-License-Identifier: Apache-2.0
-
-    # extra settings to be merged into OpenTelemetry Collector configuration
-    # do not delete this file
-    exporters: 
-        clickhouse/rrweb:
-          endpoint: ${env:CLICKHOUSE_SERVER_ENDPOINT}
-          database: ${env:CLICKHOUSE_DB}
-          username: ${env:CLICKHOUSE_USER}
-          password: ${env:CLICKHOUSE_PASSWORD}
-          ttl: 72h
-          logs_table_name: hyperdx_sessions
-          timeout: 5s
-          retry_on_failure:
-            enabled: true
-            initial_interval: 5s
-            max_interval: 30s
-            max_elapsed_time: 300s
-        clickhouse:
-          endpoint: ${env:CLICKHOUSE_SERVER_ENDPOINT}
-          database: ${env:CLICKHOUSE_DB}
-          username: ${env:CLICKHOUSE_USER}
-          password: ${env:CLICKHOUSE_PASSWORD}
-          ttl: 72h
-          timeout: 5s
-          retry_on_failure:
-            enabled: true
-            initial_interval: 5s
-            max_interval: 30s
-            max_elapsed_time: 300s
-
-    receivers:
-      httpcheck/frontend-proxy:
-        targets:
-          - endpoint: http://frontend-proxy:${env:ENVOY_PORT}
-      redis:
-        endpoint: "valkey-cart:6379"
-        username: "valkey"
-        collection_interval: 10s
-    
-    processors:
-      resource/promote_service_name:
-        attributes:
-          - action: upsert
-            key: service.name
-            from_attribute: app.kubernetes.io/component
-      transform:
-        log_statements:
-          - context: log
-            error_mode: ignore
-            statements:
-              # JSON parsing: Extends log attributes with the fields from structured log body content, either as an OTEL map or
-              # as a string containing JSON content.
-              - set(log.cache, ExtractPatterns(log.body, "(?P<0>(\\{.*\\}))")) where IsString(log.body)
-              - merge_maps(log.attributes, ParseJSON(log.cache["0"]), "upsert") where IsMap(log.cache) and IsString(log.cache["0"]) and IsMatch(log.cache["0"], "^{\\s*\\{.*\\}\\s*}$")
-              - flatten(log.attributes) where IsMap(log.cache)
-              - merge_maps(log.attributes, log.body, "upsert") where IsMap(log.body)
-          - context: log
-            error_mode: ignore
-            conditions:
-              - severity_number == 0 and severity_text == ""
-            statements:
-              # Infer: extract the first log level keyword from the first 256 characters of the body
-              - set(log.cache["substr"], log.body.string) where Len(log.body.string) < 256
-              - set(log.cache["substr"], Substring(log.body.string, 0, 256)) where Len(log.body.string) >= 256
-              - set(log.cache, ExtractPatterns(log.cache["substr"], "(?i)(?P<0>(alert|crit|emerg|fatal|error|err|warn|notice|debug|dbug|trace))"))
-              # Infer: detect FATAL
-              - set(log.severity_number, SEVERITY_NUMBER_FATAL) where IsMatch(log.cache["0"], "(?i)(alert|crit|emerg|fatal)")
-              - set(log.severity_text, "fatal") where log.severity_number == SEVERITY_NUMBER_FATAL
-              # Infer: detect ERROR
-              - set(log.severity_number, SEVERITY_NUMBER_ERROR) where IsMatch(log.cache["0"], "(?i)(error)")
-              - set(log.severity_text, "error") where log.severity_number == SEVERITY_NUMBER_ERROR
-              # Infer: detect WARN
-              - set(log.severity_number, SEVERITY_NUMBER_WARN) where IsMatch(log.cache["0"], "(?i)(warn|notice)")
-              - set(log.severity_text, "warn") where log.severity_number == SEVERITY_NUMBER_WARN
-              # Infer: detect DEBUG
-              - set(log.severity_number, SEVERITY_NUMBER_DEBUG) where IsMatch(log.cache["0"], "(?i)(debug|dbug)")
-              - set(log.severity_text, "debug") where log.severity_number == SEVERITY_NUMBER_DEBUG
-              # Infer: detect TRACE
-              - set(log.severity_number, SEVERITY_NUMBER_TRACE) where IsMatch(log.cache["0"], "(?i)(trace)")
-              - set(log.severity_text, "trace") where log.severity_number == SEVERITY_NUMBER_TRACE
-              # Infer: else
-              - set(log.severity_text, "info") where log.severity_number == 0
-              - set(log.severity_number, SEVERITY_NUMBER_INFO) where log.severity_number == 0
-        error_mode: ignore
-        trace_statements:
-          - context: span
-            statements:
-              # could be removed when https://github.com/vercel/next.js/pull/64852 is fixed upstream
-              - replace_pattern(name, "\\?.*", "")
-              - replace_match(name, "GET /api/products/*", "GET /api/products/{productId}")
-    service:
-      pipelines:
-          metrics:
-            receivers: [otlp]
-            processors: [memory_limiter, batch]
-            exporters: [clickhouse]
-          logs/out-default:
-            receivers: [routing/logs]
-            processors: [memory_limiter, transform, resource/promote_service_name, batch]
-            exporters: [clickhouse]
----
-# OpenTelemetry Collector Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: otel-collector
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: opentelemetry-collector
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "0.120.0"
-    app.kubernetes.io/component: standalone-collector
-spec:
-  replicas: 1
-  revisionHistoryLimit: 10
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: opentelemetry-collector
-      app.kubernetes.io/instance: opentelemetry-demo
-      component: standalone-collector
-  strategy:
-    type: RollingUpdate
-  template:
-    metadata:
-      annotations:
-        prometheus.io/scrape: "true"
-      labels:
-        app.kubernetes.io/name: opentelemetry-collector
-        app.kubernetes.io/instance: opentelemetry-demo
-        component: standalone-collector
-    spec:
-      serviceAccountName: otel-collector
-      securityContext:
-        {}
-      containers:
-      - name: opentelemetry-collector
-        imagePullPolicy: Always
-        image: ghcr.io/hyperdxio/hyperdx-otel-collector:2-beta.16
-        args:
-        - "--config=/etc/otelcol-contrib/config.yaml"
-        - "--config=/etc/otelcol-contrib/config-extras.yaml"
-        securityContext:
-          {}
-        ports:
-        - containerPort: 13133
-          name: health-check
-        - containerPort: 24225
-          name: fluentd
-        - containerPort: 4317
-          name: otlp-grpc
-        - containerPort: 4318
-          name: otlp-http
-        - containerPort: 8888
-          name: metrics
-        env:
-        - name: CLICKHOUSE_ENDPOINT
-          valueFrom:
-            secretKeyRef:
-              name: otel-k8s-secret
-              key: CLICKHOUSE_HOST
-        - name: CLICKHOUSE_SERVER_ENDPOINT
-          valueFrom:
-            secretKeyRef:
-              name: otel-k8s-secret
-              key: CLICKHOUSE_HOST
-        
-        - name: HYPERDX_LOG_LEVEL
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: HYPERDX_LOG_LEVEL
-        - name: ENVOY_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: ENVOY_PORT
-        - name: HOST_FILESYSTEM
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: HOST_FILESYSTEM
-        - name: MY_POD_IP
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: status.podIP
-        - name: OTEL_COLLECTOR_PORT_GRPC
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: OTEL_COLLECTOR_PORT_GRPC
-        - name: OTEL_COLLECTOR_PORT_HTTP
-          valueFrom:
-            configMapKeyRef:
-              name: hyperdx-config
-              key: OTEL_COLLECTOR_PORT_HTTP
-        - name: GOMEMLIMIT
-          value: "160MiB"
-        - name: CLICKHOUSE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: otel-k8s-secret
-              key: CLICKHOUSE_PASSWORD
-        - name: CLICKHOUSE_USER
-          valueFrom:
-            secretKeyRef:
-              name: otel-k8s-secret
-              key: CLICKHOUSE_USER
-        - name: CLICKHOUSE_DB
-          valueFrom:
-            secretKeyRef:
-              name: otel-k8s-secret
-              key: CLICKHOUSE_DB
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 13133
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 13133
-        resources:
-          limits:
-            memory: "200Mi"
-        volumeMounts:
-        - name: config-extras
-          mountPath: /etc/otelcol-contrib/config-extras.yaml
-          subPath: config-extras.yaml
-          volumeMounts:
-        securityContext:
-          runAsUser: 0
-          runAsGroup: 0
-      volumes:
-      - name: config-extras
-        configMap:
-          name: otel-collector-config-extras
-
----
-# OpenTelemetry Collector Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: otel-collector
-  namespace: otel-demo
-  labels:
-    app.kubernetes.io/name: opentelemetry-collector
-    app.kubernetes.io/instance: opentelemetry-demo
-    app.kubernetes.io/version: "0.120.0"
-    app.kubernetes.io/component: standalone-collector
-    component: standalone-collector
-spec:
-  type: ClusterIP
-  ports:
-  - name: health-check
-    port: 13133
-    targetPort: 13133
-  - name: fluentd
-    port: 24225
-    targetPort: 24225
-  - name: otlp
-    port: 4317
-    targetPort: 4317
-    protocol: TCP
-  - name: otlp-http
-    port: 4318
-    targetPort: 4318
-    protocol: TCP
-  - name: metrics
-    port: 8888
-    targetPort: 8888
-    protocol: TCP
-  selector:
-    app.kubernetes.io/name: opentelemetry-collector
-    app.kubernetes.io/instance: opentelemetry-demo
-    component: standalone-collector
-  internalTrafficPolicy: Cluster
-

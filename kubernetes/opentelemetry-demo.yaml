@@ -3231,7 +3231,7 @@ data:
     # do not delete this file
     exporters: 
         clickhouse/rrweb:
-          endpoint: tcp://${env:CLICKHOUSE_SERVER_ENDPOINT}?dial_timeout=10s&compress=lz4&secure=true
+          endpoint: ${env:CLICKHOUSE_SERVER_ENDPOINT}
           database: ${env:CLICKHOUSE_DB}
           username: ${env:CLICKHOUSE_USER}
           password: ${env:CLICKHOUSE_PASSWORD}
@@ -3244,7 +3244,7 @@ data:
             max_interval: 30s
             max_elapsed_time: 300s
         clickhouse:
-          endpoint: tcp://${env:CLICKHOUSE_SERVER_ENDPOINT}?dial_timeout=10s&compress=lz4&secure=true
+          endpoint: ${env:CLICKHOUSE_SERVER_ENDPOINT}
           database: ${env:CLICKHOUSE_DB}
           username: ${env:CLICKHOUSE_USER}
           password: ${env:CLICKHOUSE_PASSWORD}
@@ -3362,6 +3362,7 @@ spec:
         {}
       containers:
       - name: opentelemetry-collector
+        imagePullPolicy: Always
         image: ghcr.io/hyperdxio/hyperdx-otel-collector:2-beta.16
         args:
         - "--config=/etc/otelcol-contrib/config.yaml"
@@ -3380,8 +3381,16 @@ spec:
         - containerPort: 8888
           name: metrics
         env:
+        - name: CLICKHOUSE_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: otel-k8s-secret
+              key: CLICKHOUSE_HOST
         - name: CLICKHOUSE_SERVER_ENDPOINT
-          value: "sql-clickhouse.clickhouse.com:9440"
+          valueFrom:
+            secretKeyRef:
+              name: otel-k8s-secret
+              key: CLICKHOUSE_HOST
         
         - name: HYPERDX_LOG_LEVEL
           valueFrom:
@@ -3415,16 +3424,21 @@ spec:
               key: OTEL_COLLECTOR_PORT_HTTP
         - name: GOMEMLIMIT
           value: "160MiB"
-        
         - name: CLICKHOUSE_PASSWORD
           valueFrom:
             secretKeyRef:
               name: otel-k8s-secret
               key: CLICKHOUSE_PASSWORD
         - name: CLICKHOUSE_USER
-          value: "hyperdx_ingest"
+          valueFrom:
+            secretKeyRef:
+              name: otel-k8s-secret
+              key: CLICKHOUSE_USER
         - name: CLICKHOUSE_DB
-          value: "otel_v2"
+          valueFrom:
+            secretKeyRef:
+              name: otel-k8s-secret
+              key: CLICKHOUSE_DB
         livenessProbe:
           httpGet:
             path: /

@@ -37,6 +37,14 @@ presets:
   # More Info: https://opentelemetry.io/docs/kubernetes/collector/components/#kubeletstats-receiver
   kubeletMetrics:
     enabled: true
+
+extraEnvs:
+  - name: HYPERDX_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: hyperdx-secret
+        key: HYPERDX_API_KEY
+        optional: true
  
 config:
   receivers:
@@ -72,8 +80,10 @@ config:
  
   exporters:
     otlphttp:
-      endpoint: 'http://otel-collector:4318'
+      endpoint: 'http://my-hyperdx-hdx-oss-v2-otel-collector:4318'
       compression: gzip
+      headers:
+        authorization: "${env:HYPERDX_API_KEY}"
  
   service:
     pipelines:

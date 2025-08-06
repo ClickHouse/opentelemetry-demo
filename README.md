@@ -10,6 +10,10 @@
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/opentelemetry-demo)](https://artifacthub.io/packages/helm/opentelemetry-helm/opentelemetry-demo)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9247/badge)](https://www.bestpractices.dev/en/projects/9247)
 
+## Version for ClickStack
+
+We forked the OpenTelemetry demo to provide an example of a instrumented demo application using [ClickStack](https://clickhouse.com/docs/use-cases/observability/clickstack).
+
 ## Welcome to the OpenTelemetry Astronomy Shop Demo
 
 This repository contains the OpenTelemetry Astronomy Shop, a microservice-based
@@ -36,13 +40,23 @@ guidance](./CONTRIBUTING.md).
 If you'd like to extend this demo or maintain a fork of it, read our
 [fork guidance](https://opentelemetry.io/docs/demo/forking/).
 
-## Quick start
+## Quick start - Modified for ClickStack
 
-You can be up and running with the demo in a few minutes. Check out the docs for
-your preferred deployment method:
+You can be up and running with the demo in a few minutes.
 
-- [Docker](https://opentelemetry.io/docs/demo/docker_deployment/)
-- [Kubernetes](https://opentelemetry.io/docs/demo/kubernetes_deployment/)
+### Docker compose
+
+To get started locally, you can deploy it using Docker compose. 
+
+`docker compose up --build`
+
+Access to the OpenTelemetry demo frontend at `http://localhost:8080` 
+
+Logs, traces and metrics are automatically sent to a local ClickHouse deployment. You can access them using HyperDX at `http://localhost:9080`
+
+### Kubernetes
+
+You can find instructions on how to deploy the demo application on Kubernetes [here](./kubernetes/README.md)
 
 ## Documentation
 

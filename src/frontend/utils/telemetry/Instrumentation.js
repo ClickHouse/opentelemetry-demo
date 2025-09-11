@@ -5,7 +5,7 @@ const HyperDX = require('@hyperdx/node-opentelemetry');
 
 
 HyperDX.init({
-  apiKey: 'YOUR_INGESTION_API_KEY',
+  // apiKey: 'YOUR_INGESTION_API_KEY',
   service: 'frontend',
-  url: process.env.PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318',
+  // url: process.env.PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318',
 });

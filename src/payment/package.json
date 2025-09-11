@@ -4,7 +4,7 @@
   "repository": "https://github.com/opentelemetry/opentelemetry-demo",
   "main": "index.js",
   "scripts": {
-    "start": "HYPERDX_API_KEY='blah' OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 OTEL_SERVICE_NAME=payment node --require @hyperdx/node-opentelemetry/build/src/tracing index.js"
+    "start": "node --require @hyperdx/node-opentelemetry/build/src/tracing index.js"
   },
   "author": "Jonathan Lui",
   "license": "ISC",

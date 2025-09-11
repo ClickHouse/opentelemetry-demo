@@ -3,17 +3,17 @@
 import HyperDX from '@hyperdx/browser';
 
 const {
-  NEXT_PUBLIC_OTEL_SERVICE_NAME = '',
   NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = '',
   IS_SYNTHETIC_REQUEST = '',
-  PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = ''
+  PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT = '',
+  NEXT_PUBLIC_HYPERDX_API_KEY = '',
 } = typeof window !== 'undefined' ? window.ENV : {};
 
-console.log(PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT)
+console.log("testing env vars in FrontendTracer.ts", {NEXT_PUBLIC_HYPERDX_API_KEY, NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, IS_SYNTHETIC_REQUEST, PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT});
 const FrontendTracer = async () => {
 
   HyperDX.init({
-    apiKey: 'YOUR_INGESTION_API_KEY',
+    apiKey: NEXT_PUBLIC_HYPERDX_API_KEY || '',
     service: 'frontend',
     tracePropagationTargets: [/.*/i],
     consoleCapture: true,

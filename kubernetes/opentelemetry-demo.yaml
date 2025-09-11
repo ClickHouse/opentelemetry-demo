@@ -592,6 +592,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -615,6 +616,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -638,6 +640,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -661,6 +664,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -684,6 +688,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -707,6 +712,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8013
       name: rpc
@@ -736,6 +742,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -759,6 +766,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -782,6 +790,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8081
       name: tcp-service
@@ -805,6 +814,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 9092
       name: plaintext
@@ -831,6 +841,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8089
       name: tcp-service
@@ -854,6 +865,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -877,6 +889,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -900,6 +913,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -923,6 +937,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -946,6 +961,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 8080
       name: tcp-service
@@ -969,6 +985,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   type: ClusterIP
+  sessionAffinity: None
   ports:
     - port: 6379
       name: valkey-cart
@@ -990,7 +1007,7 @@ metadata:
     prometheus.io/port: "14269"
     prometheus.io/scrape: "true"
 spec:
-  replicas: 1
+  replicas: 4
   strategy:
     type: Recreate
   selector:
@@ -1077,12 +1094,12 @@ spec:
             successThreshold: 1
             timeoutSeconds: 1
           resources:
-            requests:
-              cpu: 100m
-              memory: 200Mi
-            limits:
-              cpu: 500m
-              memory: 800Mi
+            # requests:
+            #   cpu: 1
+            #   memory: 2000Mi
+            # limits:
+            #   cpu: 500m
+            #   memory: 800Mi
           volumeMounts:
       securityContext:
         fsGroup: 10001
@@ -1105,7 +1122,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1168,15 +1185,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-            limits:
-              cpu: 300m
-              memory: 400Mi
+            # limits:
+            #   cpu: 300m
+            #   memory: 400Mi
           volumeMounts:
       initContainers:
         - command:
@@ -1201,7 +1226,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1274,15 +1299,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-            limits:
-              cpu: 500m
-              memory: 600Mi
+            # limits:
+            #   cpu: 500m
+            #   memory: 600Mi
           volumeMounts:
       volumes:
 ---
@@ -1300,7 +1333,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 6
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1375,15 +1408,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-            limits:
-              cpu: 250m
-              memory: 400Mi
+            # limits:
+            #   cpu: 250m
+            #   memory: 400Mi
           volumeMounts:
       initContainers:
         - command:
@@ -1409,7 +1450,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 8
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1494,15 +1535,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-            limits:
-              cpu: 250m
-              memory: 400Mi
+            # limits:
+            #   cpu: 250m
+            #   memory: 400Mi
           volumeMounts:
       initContainers:
         - command:
@@ -1527,7 +1576,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 8
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1596,6 +1645,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
@@ -1603,8 +1660,8 @@ spec:
               cpu: 100m
               memory: 200Mi
             limits:
-              cpu: 250m
-              memory: 400Mi
+              cpu: 1
+              memory: 1000Mi
           volumeMounts:
       volumes:
 ---
@@ -1622,7 +1679,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 6
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1663,6 +1720,14 @@ spec:
               value: production
             - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318/v1/traces
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -1683,15 +1748,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
-              memory: 200Mi
-            limits:
-              cpu: 250m
-              memory: 800Mi
+              memory: 1000Mi
+            # limits:
+            #   cpu: 250m
+            #   memory: 800Mi
           volumeMounts:
       volumes:
 ---
@@ -1709,7 +1782,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1779,15 +1852,31 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-            limits:
-              cpu: 250m
-              memory: 400Mi
+            # limits:
+            #   cpu: 250m
+            #   memory: 400Mi
           volumeMounts:
             - name: config-rw
               mountPath: /etc/flagd
@@ -1840,15 +1929,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-            limits:
-              cpu: 250m
-              memory: 400Mi
+            # limits:
+            #   cpu: 250m
+            #   memory: 400Mi
           volumeMounts:
             - mountPath: /app/data
               name: config-rw
@@ -1885,7 +1982,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -1952,15 +2049,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-            limits:
-              cpu: 250m
-              memory: 600Mi
+            # limits:
+            #   cpu: 250m
+            #   memory: 600Mi
           volumeMounts:
       initContainers:
         - command:
@@ -1985,7 +2090,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 14
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2004,7 +2109,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: frontend
-          image: 'clickhouse/ch-otel-demo:latest-frontend'
+          image: 'clickhouse/ch-otel-demo:latest-frontend-7'
           imagePullPolicy: Always
           ports:
             
@@ -2042,6 +2147,8 @@ spec:
               value: flagd
             - name: FLAGD_PORT
               value: "8013"
+            - name: NEXT_PUBLIC_OTEL_SERVICE_NAME
+              value: frontend-web
             - name: OTEL_COLLECTOR_HOST
               value: $(OTEL_COLLECTOR_NAME)
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -2060,8 +2167,16 @@ spec:
               value: http://localhost:8080/otlp-http/v1/traces
             - name: PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4318
             - name: PUBLIC_OTEL_EXPORTER_OTLP_HEADERS
               value: "authorization=$(HYPERDX_API_KEY)"
+            - name: NEXT_PUBLIC_HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2082,6 +2197,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
             - name: IMAGE_BASE_URL
@@ -2090,15 +2213,15 @@ spec:
               value: "1"
             - name: HDX_NODE_BETA_MODE
               value: "1"
-            - name: ENV_PLATFORM
-              value: "local"
+            - name: NEXT_PUBLIC_PLATFORM
+              value: "kubernetes"
           resources:
             requests:
-              cpu: 300m
-              memory: 250Mi
-            limits:
-              cpu: 2000m
-              memory: 500Mi
+              cpu: 800m
+              memory: 1000Mi
+            # limits:
+            #   cpu: 2000m
+            #   memory: 500Mi
           volumeMounts:
       volumes:
 ---
@@ -2116,7 +2239,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 14
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2187,6 +2310,14 @@ spec:
               value: "4317"
             - name: OTEL_COLLECTOR_PORT_HTTP
               value: "4318"
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -2207,15 +2338,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 300m
+              cpu: 400m
               memory: 100Mi
-            limits:
-              cpu: 1000m
-              memory: 200Mi
+            # limits:
+            #   cpu: 1000m
+            #   memory: 200Mi
           securityContext:
             runAsGroup: 101
             runAsNonRoot: true
@@ -2237,7 +2376,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2298,15 +2437,31 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 50m
+              cpu: 20m
               memory: 50Mi
-            limits:
-              cpu: 100m
-              memory: 100Mi
+            # limits:
+            #   cpu: 100m
+            #   memory: 100Mi
           volumeMounts:
       volumes:
 ---
@@ -2324,7 +2479,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 6
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2395,15 +2550,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 250m
-              memory: 500Mi
-            limits:
-              cpu: 500m
+              cpu: 100m
               memory: 1000Mi
+            # limits:
+            #   cpu: 500m
+            #   memory: 1000Mi
           securityContext:
             runAsGroup: 1000
             runAsNonRoot: true
@@ -2425,7 +2588,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 3
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2444,7 +2607,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: load-generator
-          image: 'clickhouse/ch-otel-demo:latest-load-generator'
+          image: 'clickhouse/ch-otel-demo:latest-load-generator-3'
           imagePullPolicy: Always
           ports:
             
@@ -2465,9 +2628,9 @@ spec:
             - name: LOCUST_WEB_PORT
               value: "8089"
             - name: LOCUST_USERS
-              value: "10"
+              value: "4000"
             - name: LOCUST_SPAWN_RATE
-              value: "1"
+              value: "10"
             - name: LOCUST_HOST
               value: http://frontend-proxy:8080
             - name: LOCUST_HEADLESS
@@ -2512,11 +2675,22 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
-            limits:
-              memory: 1500Mi
+            requests:
+              cpu: 500m
+              memory: 1000Mi
+            # limits:
+            #   memory: 1500Mi
           volumeMounts:
       volumes:
 ---
@@ -2532,7 +2706,7 @@ metadata:
     app.kubernetes.io/version: "1.0.0"  # Replace with actual version if known
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   selector:
     matchLabels:
       opentelemetry.io/name: artillery-loadgen
@@ -2569,9 +2743,10 @@ spec:
               value: "60"
           resources:
             requests:
-              memory: "512Mi"
-            limits:
-              memory: "1Gi"
+              cpu: 1
+              memory: 2000Mi
+            # limits:
+            #   memory: "1Gi"
 ---
 # Source: opentelemetry-demo/templates/component.yaml
 apiVersion: apps/v1
@@ -2587,7 +2762,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 8
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2658,6 +2833,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
             - name: CACHE_SIZE
@@ -2669,10 +2852,10 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 50Mi
-            limits:
-              cpu: 400m
-              memory: 400Mi
+              memory: 200Mi
+            # limits:
+            #   cpu: 400m
+            #   memory: 400Mi
           securityContext:
             runAsGroup: 1000
             runAsNonRoot: true
@@ -2694,7 +2877,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 8
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2767,15 +2950,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 50m
-              memory: 50Mi
-            limits:
-              cpu: 100m
-              memory: 200Mi
+              cpu: 200m
+              memory: 100Mi
+            # limits:
+            #   cpu: 100m
+            #   memory: 200Mi
           volumeMounts:
             - name: product-catalog-products
               mountPath: /usr/src/app/products
@@ -2798,7 +2989,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2867,15 +3058,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 50m
-              memory: 50Mi
-            limits:
               cpu: 100m
               memory: 200Mi
+            # limits:
+            #   cpu: 100m
+            #   memory: 200Mi
           securityContext:
             runAsGroup: 33
             runAsNonRoot: true
@@ -2897,7 +3096,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 8
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -2974,15 +3173,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 200m
+              cpu: 150m
               memory: 200Mi
-            limits:
-              cpu: 500m
-              memory: 1000Mi
+            # limits:
+            #   cpu: 500m
+            #   memory: 1000Mi
           volumeMounts:
       volumes:
 ---
@@ -3000,7 +3207,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -3069,15 +3276,23 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 50m
-              memory: 50Mi
-            limits:
               cpu: 100m
-              memory: 200Mi
+              memory: 20Mi
+            # limits:
+            #   cpu: 100m
+            #   memory: 200Mi
           volumeMounts:
       volumes:
 ---
@@ -3095,7 +3310,7 @@ metadata:
     app.kubernetes.io/version: "2.0.2"
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
-  replicas: 1
+  replicas: 4
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -3150,15 +3365,31 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['deployment']
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-secret
+                  key: HYPERDX_API_KEY
+                  optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
+            - name: OTEL_BSP_MAX_QUEUE_SIZE	
+              value: "30000"
+            - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
+            - name: OTEL_BLRP_MAX_QUEUE_SIZE
+              value: "30000"
+            - name: OTEL_BLRP_MAX_EXPORT_BATCH_SIZE
+              value: "5000"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:
             requests:
-              cpu: 50m
-              memory: 50Mi
-            limits:
-              cpu: 100m
-              memory: 200Mi
+              cpu: 10m
+              memory: 20Mi
+            # limits:
+            #   cpu: 100m
+            #   memory: 200Mi
           securityContext:
             runAsGroup: 1000
             runAsNonRoot: true

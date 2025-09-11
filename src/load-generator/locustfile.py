@@ -11,7 +11,8 @@ import uuid
 import logging
 import re
 
-from locust import HttpUser, task, between
+from locust import task, between, events
+from locust.contrib.fasthttp import FastHttpUser
 from locust_plugins.users.playwright import PlaywrightUser, pw, PageWithRetry, event
 
 from opentelemetry import context, baggage, trace
@@ -142,8 +143,33 @@ def generate_credit_card() -> str:
         return generate_valid_mastercard_number()
 
 
-class WebsiteUser(HttpUser):
+class WebsiteUser(FastHttpUser):
     wait_time = between(1, 10)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure we have proper tracing context
+        ctx = baggage.set_baggage("session.id", str(uuid.uuid4()))
+        ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
+        context.attach(ctx)
+        
+    def _send_request_safe_mode(self, request_type, *args, **kwargs):
+        # Create a span for the request
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span("locust_request") as span:
+            span.set_attribute("http.method", request_type.upper())
+            if args:
+                span.set_attribute("http.url", args[0])
+            
+            # Add baggage to context
+            ctx = baggage.set_baggage("session.id", str(uuid.uuid4()))
+            ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
+            token = context.attach(ctx)
+            
+            try:
+                return super()._send_request_safe_mode(request_type, *args, **kwargs)
+            finally:
+                context.detach(token)
 
     @task(1)
     def index(self):
@@ -155,17 +181,17 @@ class WebsiteUser(HttpUser):
 
     @task(3)
     def get_recommendations(self):
-        params = {
-            "productIds": [random.choice(products)],
-        }
-        self.client.get("/api/recommendations", params=params)
+        params = {"productIds": [random.choice(products)]}
+        # Convert params to query string for FastHttpUser
+        query = "&".join(f"{k}={v[0] if isinstance(v, list) else v}" for k, v in params.items())
+        self.client.get(f"/api/recommendations?{query}", name="/api/recommendations")
 
     @task(3)
     def get_ads(self):
-        params = {
-            "contextKeys": [random.choice(categories)],
-        }
-        self.client.get("/api/data/", params=params)
+        params = {"contextKeys": [random.choice(categories)]}
+        # Convert params to query string for FastHttpUser
+        query = "&".join(f"{k}={v[0] if isinstance(v, list) else v}" for k, v in params.items())
+        self.client.get(f"/api/data/?{query}", name="/api/data/")
 
     @task(3)
     def view_cart(self):
@@ -184,7 +210,11 @@ class WebsiteUser(HttpUser):
             },
             "userId": user,
         }
-        self.client.post("/api/cart", json=cart_item)
+        self.client.post(
+            "/api/cart",
+            json=cart_item,
+            headers={"Content-Type": "application/json"}
+        )
 
     @task(1)
     def checkout(self):
@@ -209,15 +239,13 @@ class WebsiteUser(HttpUser):
         checkout_person["creditCard"]["creditCardNumber"] = generate_credit_card()
         self.client.post("/api/checkout", json=checkout_person)
 
-    @task(5)
-    def flood_home(self):
-        for _ in range(0, get_flagd_value("loadGeneratorFloodHomepage")):
-            self.client.get("/")
+    # @task(5)
+    # def flood_home(self):
+    #     for _ in range(0, get_flagd_value("loadGeneratorFloodHomepage")):
+    #         self.client.get("/")
 
     def on_start(self):
-        ctx = baggage.set_baggage("session.id", str(uuid.uuid4()))
-        ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
-        context.attach(ctx)
+        # Context is now set in __init__
         self.index()
 
 

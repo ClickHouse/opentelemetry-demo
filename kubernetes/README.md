@@ -33,7 +33,7 @@ This section uses the [official Helm chart](https://clickhouse.com/docs/use-case
 Add the HyperDX Helm repository:
 
 ```
-helm repo add hyperdx https://hyperdxio.github.io/helm-charts
+helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
 helm repo update
 ```
 
@@ -42,7 +42,7 @@ helm repo update
 To deploy the ClickStack with ClickHouse included:
 
 ```
-helm install my-hyperdx hyperdx/hdx-oss-v2 --set global.storageClassName="standard-rwo" -n otel-demo
+helm install my-clickstack clickstack/clickstack --set global.storageClassName="standard-rwo" -n otel-demo
 ```
 
 You might need to adjust the storageClassName according to your Kubernetes cluster configuration. 
@@ -56,8 +56,15 @@ If you'd rather use ClickHouse Cloud, you can deploy Clickstack and [disable the
 export CLICKHOUSE_URL=<CLICKHOUSE_CLOUD_URL> # full https url
 export CLICKHOUSE_USER=<CLICKHOUSE_USER>
 export CLICKHOUSE_PASSWORD=<CLICKHOUSE_PASSWORD>
+export CLICKHOUSE_DATABASE=<CLICKHOUSE_DATABASE>
 
-helm install my-hyperdx hyperdx/hdx-oss-v2  --set clickhouse.enabled=false --set clickhouse.persistence.enabled=false --set otel.clickhouseEndpoint=${CLICKHOUSE_URL} --set clickhouse.config.users.otelUserName=${CLICKHOUSE_USER} --set clickhouse.config.users.otelUserPassword=${CLICKHOUSE_PASSWORD} --set global.storageClassName="standard-rwo" -n otel-demo
+helm install my-clickstack clickstack/clickstack --set global.storageClassName="standard-rwo" \
+  -n otel-demo --set clickhouse.enabled=false \
+  --set clickhouse.persistence.enabled=false \
+  --set otel.clickhouseEndpoint=${CLICKHOUSE_URL} \
+  --set clickhouse.config.users.otelUserName=${CLICKHOUSE_USER} \
+  --set clickhouse.config.users.otelUserPassword=${CLICKHOUSE_PASSWORD} \
+  --set otel.clickhouseDatabase=${CLICKHOUSE_DATABASE}
 ```
 
 ### Access HyperDX UI
@@ -65,16 +72,13 @@ helm install my-hyperdx hyperdx/hdx-oss-v2  --set clickhouse.enabled=false --set
 Check the pods initialization: 
 
 ```
-kubectl get pods -l "app.kubernetes.io/name=hdx-oss-v2" -n otel-demo
+kubectl get pods -l "app.kubernetes.io/name=clickstack" -n otel-demo
 ```
 
 Once the pods are correctly initialized, access the HyperDX UI using port-forward:
 
 ```
-kubectl port-forward \
-  pod/$(kubectl get pod -l app.kubernetes.io/name=hdx-oss-v2 -o jsonpath='{.items[0].metadata.name}' -n otel-demo) \
-  8080:3000 \
-  -n otel-demo
+kubectl -n otel-demo port-forward svc/my-clickstack-app 3000:3000
 ```
 
 You can then access the UI at `http://localhost:8080`

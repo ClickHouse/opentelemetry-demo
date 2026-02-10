@@ -93,7 +93,7 @@ Create a new Kubernetes secret with the Ingestion API Key:
 
 ```
 kubectl create secret generic hyperdx-secret \
---from-literal=HYPERDX_API_KEY=<ingestion_api_key> \
+--from-literal=HYPERDX_API_KEY=<INGESTION_API_KEY> \
 -n otel-demo
 ```
 

@@ -3,10 +3,8 @@
 
 import Document, { DocumentContext, Html, Head, Main, NextScript } from 'next/document';
 import { ServerStyleSheet } from 'styled-components';
-import {context, propagation} from "@opentelemetry/api";
 
-const { ENV_PLATFORM, PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_COLLECTOR_HOST, 
-  PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT, NEXT_PUBLIC_HYPERDX_API_KEY, IMAGE_BASE_URL} = process.env;
+const { ENV_PLATFORM, IMAGE_BASE_URL } = process.env;
 
 export default class MyDocument extends Document<{ envString: string }> {
   static async getInitialProps(ctx: DocumentContext) {
@@ -20,20 +18,10 @@ export default class MyDocument extends Document<{ envString: string }> {
         });
 
       const initialProps = await Document.getInitialProps(ctx);
-      const baggage = propagation.getBaggage(context.active());
-      const isSyntheticRequest = baggage?.getEntry('synthetic_request')?.value === 'true';
-
-      const otlpTracesEndpoint = isSyntheticRequest
-          ? `http://${OTEL_COLLECTOR_HOST}:4318/v1/traces`
-          : PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT;
 
       const envString = `
         window.ENV = {
           NEXT_PUBLIC_PLATFORM: '${ENV_PLATFORM}',
-          NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: '${otlpTracesEndpoint}',
-          IS_SYNTHETIC_REQUEST: '${isSyntheticRequest}',
-          PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: '${PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT}',
-          NEXT_PUBLIC_HYPERDX_API_KEY: '${NEXT_PUBLIC_HYPERDX_API_KEY}',
           IMAGE_BASE_URL: '${IMAGE_BASE_URL}',
         };`;
       return {

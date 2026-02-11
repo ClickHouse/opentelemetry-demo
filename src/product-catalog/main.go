@@ -15,26 +15,11 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/contrib/instrumentation/runtime"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	otelcodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/propagation"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
-
-	otelhooks "github.com/open-feature/go-sdk-contrib/hooks/open-telemetry/pkg"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	pb "github.com/opentelemetry/opentelemetry-demo/src/product-catalog/genproto/oteldemo"
@@ -48,10 +33,8 @@ import (
 )
 
 var (
-	log               *logrus.Logger
-	catalog           []*pb.Product
-	resource          *sdkresource.Resource
-	initResourcesOnce sync.Once
+	log     *logrus.Logger
+	catalog []*pb.Product
 )
 
 const DEFAULT_RELOAD_INTERVAL = 10
@@ -62,78 +45,8 @@ func init() {
 	loadProductCatalog()
 }
 
-func initResource() *sdkresource.Resource {
-	initResourcesOnce.Do(func() {
-		extraResources, _ := sdkresource.New(
-			context.Background(),
-			sdkresource.WithOS(),
-			sdkresource.WithProcess(),
-			sdkresource.WithContainer(),
-			sdkresource.WithHost(),
-		)
-		resource, _ = sdkresource.Merge(
-			sdkresource.Default(),
-			extraResources,
-		)
-	})
-	return resource
-}
-
-func initTracerProvider() *sdktrace.TracerProvider {
-	ctx := context.Background()
-
-	exporter, err := otlptracegrpc.New(ctx)
-	if err != nil {
-		log.Fatalf("OTLP Trace gRPC Creation: %v", err)
-	}
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(initResource()),
-	)
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	return tp
-}
-
-func initMeterProvider() *sdkmetric.MeterProvider {
-	ctx := context.Background()
-
-	exporter, err := otlpmetricgrpc.New(ctx)
-	if err != nil {
-		log.Fatalf("new otlp metric grpc exporter failed: %v", err)
-	}
-
-	mp := sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter)),
-		sdkmetric.WithResource(initResource()),
-	)
-	otel.SetMeterProvider(mp)
-	return mp
-}
-
 func main() {
-	tp := initTracerProvider()
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Fatalf("Tracer Provider Shutdown: %v", err)
-		}
-		log.Println("Shutdown tracer provider")
-	}()
-
-	mp := initMeterProvider()
-	defer func() {
-		if err := mp.Shutdown(context.Background()); err != nil {
-			log.Fatalf("Error shutting down meter provider: %v", err)
-		}
-		log.Println("Shutdown meter provider")
-	}()
-	openfeature.AddHooks(otelhooks.NewTracesHook())
 	err := openfeature.SetProvider(flagd.NewProvider())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,9 +62,7 @@ func main() {
 		log.Fatalf("TCP Listen: %v", err)
 	}
 
-	srv := grpc.NewServer(
-		grpc.StatsHandler(otelgrpc.NewServerHandler()),
-	)
+	srv := grpc.NewServer()
 
 	reflection.Register(srv)
 
@@ -272,25 +183,13 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 }
 
 func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.ListProductsResponse, error) {
-	span := trace.SpanFromContext(ctx)
-
-	span.SetAttributes(
-		attribute.Int("app.products.count", len(catalog)),
-	)
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
-	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(
-		attribute.String("app.product.id", req.Id),
-	)
-
 	// GetProduct will fail on a specific product when feature flag is enabled
 	if p.checkProductFailure(ctx, req.Id) {
 		msg := fmt.Sprintf("Error: Product Catalog Fail Feature Flag Enabled")
-		span.SetStatus(otelcodes.Error, msg)
-		span.AddEvent(msg)
 		return nil, status.Errorf(codes.Internal, msg)
 	}
 
@@ -304,22 +203,13 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 
 	if found == nil {
 		msg := fmt.Sprintf("Product Not Found: %s", req.Id)
-		span.SetStatus(otelcodes.Error, msg)
-		span.AddEvent(msg)
 		return nil, status.Errorf(codes.NotFound, msg)
 	}
 
-	span.AddEvent("Product Found")
-	span.SetAttributes(
-		attribute.String("app.product.id", req.Id),
-		attribute.String("app.product.name", found.Name),
-	)
 	return found, nil
 }
 
 func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProductsRequest) (*pb.SearchProductsResponse, error) {
-	span := trace.SpanFromContext(ctx)
-
 	var result []*pb.Product
 	for _, product := range catalog {
 		if strings.Contains(strings.ToLower(product.Name), strings.ToLower(req.Query)) ||
@@ -327,9 +217,6 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 			result = append(result, product)
 		}
 	}
-	span.SetAttributes(
-		attribute.Int("app.products_search.count", len(result)),
-	)
 	return &pb.SearchProductsResponse{Results: result}, nil
 }
 
@@ -348,6 +235,5 @@ func (p *productCatalog) checkProductFailure(ctx context.Context, id string) boo
 func createClient(ctx context.Context, svcAddr string) (*grpc.ClientConn, error) {
 	return grpc.DialContext(ctx, svcAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 }

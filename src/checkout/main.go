@@ -11,30 +11,13 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"sync"
 	"time"
-
-	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/IBM/sarama"
 	"github.com/google/uuid"
-	otelhooks "github.com/open-feature/go-sdk-contrib/hooks/open-telemetry/pkg"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/contrib/instrumentation/runtime"
-	"go.opentelemetry.io/otel"
-	otelcodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/propagation"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -52,9 +35,6 @@ import (
 //go:generate protoc --go_out=./ --go-grpc_out=./ --proto_path=../../pb ../../pb/demo.proto
 
 var log *logrus.Logger
-var tracer trace.Tracer
-var resource *sdkresource.Resource
-var initResourcesOnce sync.Once
 
 func init() {
 	log = logrus.New()
@@ -68,55 +48,6 @@ func init() {
 		TimestampFormat: time.RFC3339Nano,
 	}
 	log.Out = os.Stdout
-}
-
-func initResource() *sdkresource.Resource {
-	initResourcesOnce.Do(func() {
-		extraResources, _ := sdkresource.New(
-			context.Background(),
-			sdkresource.WithOS(),
-			sdkresource.WithProcess(),
-			sdkresource.WithContainer(),
-			sdkresource.WithHost(),
-		)
-		resource, _ = sdkresource.Merge(
-			sdkresource.Default(),
-			extraResources,
-		)
-	})
-	return resource
-}
-
-func initTracerProvider() *sdktrace.TracerProvider {
-	ctx := context.Background()
-
-	exporter, err := otlptracegrpc.New(ctx)
-	if err != nil {
-		log.Fatalf("new otlp trace grpc exporter failed: %v", err)
-	}
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(initResource()),
-	)
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	return tp
-}
-
-func initMeterProvider() *sdkmetric.MeterProvider {
-	ctx := context.Background()
-
-	exporter, err := otlpmetricgrpc.New(ctx)
-	if err != nil {
-		log.Fatalf("new otlp metric grpc exporter failed: %v", err)
-	}
-
-	mp := sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exporter)),
-		sdkmetric.WithResource(initResource()),
-	)
-	otel.SetMeterProvider(mp)
-	return mp
 }
 
 type checkout struct {
@@ -141,29 +72,7 @@ func main() {
 	var port string
 	mustMapEnv(&port, "CHECKOUT_PORT")
 
-	tp := initTracerProvider()
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
-
-	mp := initMeterProvider()
-	defer func() {
-		if err := mp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down meter provider: %v", err)
-		}
-	}()
-
-	err := runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	openfeature.SetProvider(flagd.NewProvider())
-	openfeature.AddHooks(otelhooks.NewTracesHook())
-
-	tracer = tp.Tracer("checkout")
 
 	svc := new(checkout)
 
@@ -199,6 +108,7 @@ func main() {
 
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
+	var err error
 	if svc.kafkaBrokerSvcAddr != "" {
 		svc.KafkaProducerClient, err = kafka.CreateKafkaProducer([]string{svc.kafkaBrokerSvcAddr}, log)
 		if err != nil {
@@ -213,9 +123,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var srv = grpc.NewServer(
-		grpc.StatsHandler(otelgrpc.NewServerHandler()),
-	)
+	var srv = grpc.NewServer()
 	pb.RegisterCheckoutServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
 	log.Infof("starting to listen on tcp: %q", lis.Addr().String())
@@ -240,19 +148,7 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
-	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(
-		attribute.String("app.user.id", req.UserId),
-		attribute.String("app.user.currency", req.UserCurrency),
-	)
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
-
-	var err error
-	defer func() {
-		if err != nil {
-			span.AddEvent("error", trace.WithAttributes(semconv.ExceptionMessageKey.String(err.Error())))
-		}
-	}()
 
 	orderID, err := uuid.NewUUID()
 	if err != nil {
@@ -263,7 +159,6 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	span.AddEvent("prepared")
 
 	total := &pb.Money{CurrencyCode: req.UserCurrency,
 		Units: 0,
@@ -279,15 +174,11 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to charge card: %+v", err)
 	}
 	log.Infof("payment went through (transaction_id: %s)", txID)
-	span.AddEvent("charged",
-		trace.WithAttributes(attribute.String("app.payment.transaction.id", txID)))
 
 	shippingTrackingID, err := cs.shipOrder(ctx, req.Address, prep.cartItems)
 	if err != nil {
 		return nil, status.Errorf(codes.Unavailable, "shipping error: %+v", err)
 	}
-	shippingTrackingAttribute := attribute.String("app.shipping.tracking.id", shippingTrackingID)
-	span.AddEvent("shipped", trace.WithAttributes(shippingTrackingAttribute))
 
 	_ = cs.emptyUserCart(ctx, req.UserId)
 
@@ -298,17 +189,6 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		ShippingAddress:    req.Address,
 		Items:              prep.orderItems,
 	}
-
-	shippingCostFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", prep.shippingCostLocalized.GetUnits(), prep.shippingCostLocalized.GetNanos()/1000000000), 64)
-	totalPriceFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", total.GetUnits(), total.GetNanos()/1000000000), 64)
-
-	span.SetAttributes(
-		attribute.String("app.order.id", orderID.String()),
-		attribute.Float64("app.shipping.amount", shippingCostFloat),
-		attribute.Float64("app.order.amount", totalPriceFloat),
-		attribute.Int("app.order.items.count", len(prep.orderItems)),
-		shippingTrackingAttribute,
-	)
 
 	if err := cs.sendOrderConfirmation(ctx, req.Email, orderResult); err != nil {
 		log.Warnf("failed to send order confirmation to %q: %+v", req.Email, err)
@@ -333,10 +213,6 @@ type orderPrep struct {
 }
 
 func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Context, userID, userCurrency string, address *pb.Address) (orderPrep, error) {
-
-	ctx, span := tracer.Start(ctx, "prepareOrderItemsAndShippingQuoteFromCart")
-	defer span.End()
-
 	var out orderPrep
 	cartItems, err := cs.getUserCart(ctx, userID)
 	if err != nil {
@@ -359,24 +235,12 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 	out.cartItems = cartItems
 	out.orderItems = orderItems
 
-	var totalCart int32
-	for _, ci := range cartItems {
-		totalCart += ci.Quantity
-	}
-	shippingCostFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", shippingPrice.GetUnits(), shippingPrice.GetNanos()/1000000000), 64)
-
-	span.SetAttributes(
-		attribute.Float64("app.shipping.amount", shippingCostFloat),
-		attribute.Int("app.cart.items.count", int(totalCart)),
-		attribute.Int("app.order.items.count", len(orderItems)),
-	)
 	return out, nil
 }
 
 func mustCreateClient(svcAddr string) *grpc.ClientConn {
 	c, err := grpc.NewClient(svcAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		log.Fatalf("could not connect to %s service, err: %+v", svcAddr, err)
@@ -466,7 +330,7 @@ func (cs *checkout) sendOrderConfirmation(ctx context.Context, email string, ord
 		return fmt.Errorf("failed to marshal order to JSON: %+v", err)
 	}
 
-	resp, err := otelhttp.Post(ctx, cs.emailSvcAddr+"/send_order_confirmation", "application/json", bytes.NewBuffer(emailPayload))
+	resp, err := http.Post(cs.emailSvcAddr+"/send_order_confirmation", "application/json", bytes.NewBuffer(emailPayload))
 	if err != nil {
 		return fmt.Errorf("failed POST to email service: %+v", err)
 	}
@@ -501,10 +365,6 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 		Value: sarama.ByteEncoder(message),
 	}
 
-	// Inject tracing info into message
-	span := createProducerSpan(ctx, &msg)
-	defer span.End()
-
 	// Send message and handle response
 	startTime := time.Now()
 	select {
@@ -512,33 +372,13 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 		log.Infof("Message sent to Kafka: %v", msg)
 		select {
 		case successMsg := <-cs.KafkaProducerClient.Successes():
-			span.SetAttributes(
-				attribute.Bool("messaging.kafka.producer.success", true),
-				attribute.Int("messaging.kafka.producer.duration_ms", int(time.Since(startTime).Milliseconds())),
-				attribute.KeyValue(semconv.MessagingKafkaMessageOffset(int(successMsg.Offset))),
-			)
 			log.Infof("Successful to write message. offset: %v, duration: %v", successMsg.Offset, time.Since(startTime))
 		case errMsg := <-cs.KafkaProducerClient.Errors():
-			span.SetAttributes(
-				attribute.Bool("messaging.kafka.producer.success", false),
-				attribute.Int("messaging.kafka.producer.duration_ms", int(time.Since(startTime).Milliseconds())),
-			)
-			span.SetStatus(otelcodes.Error, errMsg.Err.Error())
 			log.Errorf("Failed to write message: %v", errMsg.Err)
 		case <-ctx.Done():
-			span.SetAttributes(
-				attribute.Bool("messaging.kafka.producer.success", false),
-				attribute.Int("messaging.kafka.producer.duration_ms", int(time.Since(startTime).Milliseconds())),
-			)
-			span.SetStatus(otelcodes.Error, "Context cancelled: "+ctx.Err().Error())
 			log.Warnf("Context canceled before success message received: %v", ctx.Err())
 		}
 	case <-ctx.Done():
-		span.SetAttributes(
-			attribute.Bool("messaging.kafka.producer.success", false),
-			attribute.Int("messaging.kafka.producer.duration_ms", int(time.Since(startTime).Milliseconds())),
-		)
-		span.SetStatus(otelcodes.Error, "Failed to send: "+ctx.Err().Error())
 		log.Errorf("Failed to send message to Kafka within context deadline: %v", ctx.Err())
 		return
 	}
@@ -554,32 +394,6 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 		}
 		log.Infof("Done with #%d messages for overload simulation.", ffValue)
 	}
-}
-
-func createProducerSpan(ctx context.Context, msg *sarama.ProducerMessage) trace.Span {
-	spanContext, span := tracer.Start(
-		ctx,
-		fmt.Sprintf("%s publish", msg.Topic),
-		trace.WithSpanKind(trace.SpanKindProducer),
-		trace.WithAttributes(
-			semconv.PeerService("kafka"),
-			semconv.NetworkTransportTCP,
-			semconv.MessagingSystemKafka,
-			semconv.MessagingDestinationName(msg.Topic),
-			semconv.MessagingOperationPublish,
-			semconv.MessagingKafkaDestinationPartition(int(msg.Partition)),
-		),
-	)
-
-	carrier := propagation.MapCarrier{}
-	propagator := otel.GetTextMapPropagator()
-	propagator.Inject(spanContext, carrier)
-
-	for key, value := range carrier {
-		msg.Headers = append(msg.Headers, sarama.RecordHeader{Key: []byte(key), Value: []byte(value)})
-	}
-
-	return span
 }
 
 func (cs *checkout) isFeatureFlagEnabled(ctx context.Context, featureFlagName string) bool {

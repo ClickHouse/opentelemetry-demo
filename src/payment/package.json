@@ -4,14 +4,13 @@
   "repository": "https://github.com/opentelemetry/opentelemetry-demo",
   "main": "index.js",
   "scripts": {
-     "start": "node --require @hyperdx/node-opentelemetry/build/src/tracing index.js"
+    "start": "node index.js"
   },
   "author": "Jonathan Lui",
   "license": "ISC",
   "dependencies": {
     "@grpc/grpc-js": "1.12.6",
     "@grpc/proto-loader": "0.7.13",
-    "@hyperdx/node-opentelemetry": "^0.8.1",
     "@openfeature/flagd-provider": "0.13.3",
     "@openfeature/server-sdk": "1.17.1",
     "grpc-js-health-check": "1.2.2",

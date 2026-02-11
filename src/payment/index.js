@@ -3,7 +3,6 @@
 const grpc = require('@grpc/grpc-js')
 const protoLoader = require('@grpc/proto-loader')
 const health = require('grpc-js-health-check')
-const HyperDX = require('@hyperdx/node-opentelemetry');
 
 const charge = require('./charge')
 const logger = require('./logger')
@@ -12,19 +11,14 @@ async function chargeServiceHandler(call, callback) {
 
   try {
     const amount = call.request.amount
-    
-    HyperDX.setTraceAttributes({
-      'app.payment.amount': parseFloat(`${amount.units}.${amount.nanos}`).toFixed(2)
-    });
 
     logger.info("Charge request received.", { request: call.request })
-    
+
     const response = await charge.charge(call.request)
     callback(null, response)
 
   } catch (err) {
     logger.error(err)
-    HyperDX.recordException(err)
     callback(err)
   }
 }

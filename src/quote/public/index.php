@@ -8,12 +8,6 @@ declare(strict_types=1);
 
 use DI\Bridge\Slim\Bridge;
 use DI\ContainerBuilder;
-use OpenTelemetry\API\Globals;
-use OpenTelemetry\SDK\Common\Configuration\Configuration;
-use OpenTelemetry\SDK\Common\Configuration\Variables;
-use OpenTelemetry\SDK\Logs\LoggerProviderInterface;
-use OpenTelemetry\SDK\Metrics\MeterProviderInterface;
-use OpenTelemetry\SDK\Trace\TracerProviderInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\HttpServer;
@@ -55,23 +49,6 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 Loop::get()->addSignal(SIGTERM, function() {
     exit;
 });
-
-/* workaround for non-async batch processors */
-if (($tracerProvider = Globals::tracerProvider()) instanceof TracerProviderInterface) {
-    Loop::addPeriodicTimer(Configuration::getInt(Variables::OTEL_BSP_SCHEDULE_DELAY)/1000, function() use ($tracerProvider) {
-        $tracerProvider->forceFlush();
-    });
-}
-if (($loggerProvider = Globals::loggerProvider()) instanceof LoggerProviderInterface) {
-    Loop::addPeriodicTimer(Configuration::getInt(Variables::OTEL_BLRP_SCHEDULE_DELAY)/1000, function() use ($loggerProvider) {
-        $loggerProvider->forceFlush();
-    });
-}
-if (($meterProvider = Globals::meterProvider()) instanceof MeterProviderInterface) {
-    Loop::addPeriodicTimer(Configuration::getInt(Variables::OTEL_METRIC_EXPORT_INTERVAL)/1000, function() use ($meterProvider) {
-        $meterProvider->forceFlush();
-    });
-}
 
 $server = new HttpServer(function (ServerRequestInterface $request) use ($app) {
     $response = $app->handle($request);

@@ -27,31 +27,20 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
     public override async Task<Empty> AddItem(AddItemRequest request, ServerCallContext context)
     {
-        var activity = Activity.Current;
-        activity?.SetTag("app.user.id", request.UserId);
-        activity?.SetTag("app.product.id", request.Item.ProductId);
-        activity?.SetTag("app.product.quantity", request.Item.Quantity);
-
         try
         {
             await _cartStore.AddItemAsync(request.UserId, request.Item.ProductId, request.Item.Quantity);
 
             return Empty;
         }
-        catch (RpcException ex)
+        catch (RpcException)
         {
-            activity?.AddException(ex);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
     }
 
     public override async Task<Cart> GetCart(GetCartRequest request, ServerCallContext context)
     {
-        var activity = Activity.Current;
-        activity?.SetTag("app.user.id", request.UserId);
-        activity?.AddEvent(new("Fetch cart"));
-
         try
         {
             var cart = await _cartStore.GetCartAsync(request.UserId);
@@ -60,24 +49,17 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             {
                 totalCart += item.Quantity;
             }
-            activity?.SetTag("app.cart.items.count", totalCart);
 
             return cart;
         }
-        catch (RpcException ex)
+        catch (RpcException)
         {
-            activity?.AddException(ex);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
     }
 
     public override async Task<Empty> EmptyCart(EmptyCartRequest request, ServerCallContext context)
     {
-        var activity = Activity.Current;
-        activity?.SetTag("app.user.id", request.UserId);
-        activity?.AddEvent(new("Empty cart"));
-
         try
         {
             if (await _featureFlagHelper.GetBooleanValueAsync("cartFailure", false))
@@ -89,10 +71,8 @@ public class CartService : Oteldemo.CartService.CartServiceBase
                 await _cartStore.EmptyCartAsync(request.UserId);
             }
         }
-        catch (RpcException ex)
+        catch (RpcException)
         {
-            Activity.Current?.AddException(ex);
-            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
 

@@ -26,7 +26,7 @@ WORKDIR /usr/src/app/
 COPY --from=builder /reqs /usr/local
 COPY ./src/recommendation/ ./
 
-RUN opentelemetry-bootstrap -a install
+
 
 EXPOSE ${RECOMMENDATION_PORT}
-ENTRYPOINT [ "opentelemetry-instrument", "python", "recommendation_server.py" ]
+ENTRYPOINT [ "python", "recommendation_server.py" ]

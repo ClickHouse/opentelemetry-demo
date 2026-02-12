@@ -17,6 +17,7 @@
 		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.2" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>

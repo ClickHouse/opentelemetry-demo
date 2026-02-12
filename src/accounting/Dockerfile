@@ -26,10 +26,4 @@ USER app
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-USER root
-RUN mkdir -p "/var/log/opentelemetry/dotnet"
-RUN chown app "/var/log/opentelemetry/dotnet"
-RUN chown app "/app/instrument.sh"
-USER app
-
-ENTRYPOINT ["./instrument.sh", "dotnet", "Accounting.dll"]
+ENTRYPOINT ["dotnet", "Accounting.dll"]

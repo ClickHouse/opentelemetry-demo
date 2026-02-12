@@ -1,5 +1,3 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
 using System;
 
 using cart.cartstore;
@@ -10,14 +8,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Instrumentation.StackExchangeRedis;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using OpenFeature;
 using OpenFeature.Contrib.Providers.Flagd;
-using OpenFeature.Contrib.Hooks.Otel;
 
 var builder = WebApplication.CreateBuilder(args);
 string valkeyAddress = builder.Configuration["VALKEY_ADDR"];
@@ -28,7 +20,6 @@ if (string.IsNullOrEmpty(valkeyAddress))
 }
 
 builder.Logging
-    .AddOpenTelemetry(options => options.AddOtlpExporter())
     .AddConsole();
 
 builder.Services.AddSingleton<ICartStore>(x =>
@@ -52,30 +43,6 @@ builder.Services.AddSingleton(x =>
         x.GetRequiredService<IFeatureClient>()
 ));
 
-
-Action<ResourceBuilder> appResourceBuilder =
-    resource => resource
-        .AddContainerDetector()
-        .AddHostDetector();
-
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(appResourceBuilder)
-    .WithTracing(tracerBuilder => tracerBuilder
-        .AddSource("OpenTelemetry.Demo.Cart")
-        .AddRedisInstrumentation(
-            options => options.SetVerboseDatabaseStatements = true)
-        .AddAspNetCoreInstrumentation()
-        .AddGrpcClientInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddOtlpExporter())
-    .WithMetrics(meterBuilder => meterBuilder
-        .AddMeter("OpenTelemetry.Demo.Cart")
-        .AddProcessInstrumentation()
-        .AddRuntimeInstrumentation()
-        .AddAspNetCoreInstrumentation()
-        .SetExemplarFilter(ExemplarFilterType.TraceBased)
-        .AddOtlpExporter());
-OpenFeature.Api.Instance.AddHooks(new TracingHook());
 builder.Services.AddGrpc();
 builder.Services.AddGrpcHealthChecks()
     .AddCheck("Sample", () => HealthCheckResult.Healthy());
@@ -83,7 +50,6 @@ builder.Services.AddGrpcHealthChecks()
 var app = builder.Build();
 
 var ValkeyCartStore = (ValkeyCartStore)app.Services.GetRequiredService<ICartStore>();
-app.Services.GetRequiredService<StackExchangeRedisInstrumentation>().AddConnection(ValkeyCartStore.GetConnection());
 
 app.MapGrpcService<CartService>();
 app.MapGrpcHealthChecksService();

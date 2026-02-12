@@ -5,5 +5,6 @@ python-json-logger==3.3.0
 openfeature-sdk==0.8.0
 openfeature-provider-flagd==0.2.0
 psutil==6.1.1
+typing_extensions==4.12.2
 
 

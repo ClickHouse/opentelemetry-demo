@@ -7,7 +7,6 @@ using Grpc.Core;
 using StackExchange.Redis;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics.Metrics;
 using System.Diagnostics;
 
 namespace cart.cartstore;
@@ -25,22 +24,6 @@ public class ValkeyCartStore : ICartStore
     private readonly byte[] _emptyCartBytes;
     private readonly string _connectionString;
 
-    private static readonly ActivitySource CartActivitySource = new("OpenTelemetry.Demo.Cart");
-    private static readonly Meter CartMeter = new Meter("OpenTelemetry.Demo.Cart");
-    private static readonly Histogram<double> addItemHistogram = CartMeter.CreateHistogram(
-        "app.cart.add_item.latency",
-        unit: "s",
-        advice: new InstrumentAdvice<double>
-        {
-            HistogramBucketBoundaries = [ 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10 ]
-        });
-    private static readonly Histogram<double> getCartHistogram = CartMeter.CreateHistogram(
-        "app.cart.get_cart.latency",
-        unit: "s",
-        advice: new InstrumentAdvice<double>
-        {
-            HistogramBucketBoundaries = [ 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10 ]
-        });
     private readonly ConfigurationOptions _redisConnectionOptions;
 
     public ValkeyCartStore(ILogger<ValkeyCartStore> logger, string valkeyAddress)
@@ -165,10 +148,7 @@ public class ValkeyCartStore : ICartStore
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Can't access cart storage. {ex}"));
         }
-        finally
-        {
-            addItemHistogram.Record(stopwatch.Elapsed.TotalSeconds);
-        }
+
     }
 
     public async Task EmptyCartAsync(string userId)
@@ -216,10 +196,7 @@ public class ValkeyCartStore : ICartStore
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition, $"Can't access cart storage. {ex}"));
         }
-        finally
-        {
-            getCartHistogram.Record(stopwatch.Elapsed.TotalSeconds);
-        }
+
     }
 
     public bool Ping()

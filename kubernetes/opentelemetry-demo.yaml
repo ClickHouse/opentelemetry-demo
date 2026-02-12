@@ -1124,7 +1124,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: accounting
-          image: 'clickhouse/ch-otel-demo:latest-accounting'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-accounting'
           imagePullPolicy: Always
           env:
             - name: OTEL_SERVICE_NAME
@@ -1220,7 +1220,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: ad
-          image: 'clickhouse/ch-otel-demo:latest-ad'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-ad'
           imagePullPolicy: Always
           ports:
             
@@ -1319,7 +1319,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: cart
-          image: 'clickhouse/ch-otel-demo:latest-cart'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-cart'
           imagePullPolicy: Always
           ports:
             
@@ -1428,7 +1428,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: checkout
-          image: 'clickhouse/ch-otel-demo:latest-checkout'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-checkout'
           imagePullPolicy: Always
           ports:
             
@@ -1546,7 +1546,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: currency
-          image: 'clickhouse/ch-otel-demo:latest-currency'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-currency'
           imagePullPolicy: Always
           ports:
             
@@ -1641,7 +1641,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: email
-          image: 'clickhouse/ch-otel-demo:latest-email'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-email'
           imagePullPolicy: Always
           ports:
             
@@ -1806,7 +1806,7 @@ spec:
             - name: config-rw
               mountPath: /etc/flagd
         - name: flagd-ui
-          image: 'clickhouse/ch-otel-demo:latest-flagd-ui'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-flagd-ui'
           imagePullPolicy: Always
           ports:
             
@@ -1918,7 +1918,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: fraud-detection
-          image: 'clickhouse/ch-otel-demo:latest-fraud-detection'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-fraud-detection'
           imagePullPolicy: Always
           env:
             - name: OTEL_SERVICE_NAME
@@ -2018,7 +2018,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: frontend
-          image: 'clickhouse/ch-otel-demo:latest-frontend'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-frontend'
           imagePullPolicy: Always
           ports:
             
@@ -2159,7 +2159,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: frontend-proxy
-          image: 'clickhouse/ch-otel-demo:latest-frontend-proxy'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-frontend-proxy'
           imagePullPolicy: Always
           ports:
             
@@ -2288,7 +2288,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: image-provider
-          image: 'clickhouse/ch-otel-demo:latest-image-provider'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-image-provider'
           imagePullPolicy: Always
           ports:
             
@@ -2383,7 +2383,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: kafka
-          image: 'clickhouse/ch-otel-demo:latest-kafka'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-kafka'
           imagePullPolicy: Always
           ports:
             
@@ -2484,7 +2484,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: load-generator
-          image: 'clickhouse/ch-otel-demo:latest-load-generator'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-load-generator'
           imagePullPolicy: Always
           ports:
             
@@ -2587,7 +2587,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: artillery-loadgen
-          image: 'clickhouse/ch-otel-demo:latest-artillery'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-artillery'
           imagePullPolicy: Always
           command: ["/bin/sh"]
           args:
@@ -2646,7 +2646,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: payment
-          image: 'clickhouse/ch-otel-demo:latest-payment'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-payment'
           imagePullPolicy: Always
           ports:
             
@@ -2753,7 +2753,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: product-catalog
-          image: 'clickhouse/ch-otel-demo:latest-product-catalog'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-product-catalog'
           imagePullPolicy: Always
           ports:
             
@@ -2857,7 +2857,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: quote
-          image: 'clickhouse/ch-otel-demo:latest-quote'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-quote'
           imagePullPolicy: Always
           ports:
             
@@ -2956,7 +2956,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: recommendation
-          image: 'clickhouse/ch-otel-demo:latest-recommendation'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-recommendation'
           imagePullPolicy: Always
           ports:
             
@@ -3059,7 +3059,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: shipping
-          image: 'clickhouse/ch-otel-demo:latest-shipping'
+          image: 'clickhouse/ch-otel-demo:latest-no-telemetry-shipping'
           imagePullPolicy: Always
           ports:
             

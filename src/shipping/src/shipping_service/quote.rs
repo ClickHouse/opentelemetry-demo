@@ -5,9 +5,6 @@ use core::fmt;
 use std::{collections::HashMap, env};
 
 use log::info;
-use opentelemetry::{trace::get_active_span, KeyValue};
-use reqwest_middleware::ClientBuilder;
-use reqwest_tracing::{SpanBackendWithUrl, TracingMiddleware};
 
 #[derive(Debug, Default)]
 pub struct Quote {
@@ -25,23 +22,15 @@ pub async fn create_quote_from_count(count: u32) -> Result<Quote, tonic::Status>
         }
     };
 
-    Ok(get_active_span(|span| {
-        let q = create_quote_from_float(f);
-        span.add_event(
-            "Received Quote".to_string(),
-            vec![KeyValue::new("app.shipping.cost.total", format!("{}", q))],
-        );
-        span.set_attribute(KeyValue::new("app.shipping.items.count", count as i64));
-        span.set_attribute(KeyValue::new("app.shipping.cost.total", format!("{}", q)));
-        q
-    }))
+    let q = create_quote_from_float(f);
+    Ok(q)
 }
 
 async fn request_quote(count: u32) -> Result<f64, Box<dyn std::error::Error>> {
     let quote_service_addr: String = format!(
         "{}{}",
         env::var("QUOTE_ADDR")
-            .unwrap_or_else(|_| "http://quote:8090".to_string())
+            .unwrap_or_else(|_| "http://quote:8080".to_string())
             .parse::<String>()
             .expect("Invalid quote service address"),
         "/getquote"
@@ -50,9 +39,7 @@ async fn request_quote(count: u32) -> Result<f64, Box<dyn std::error::Error>> {
     let mut reqbody = HashMap::new();
     reqbody.insert("numberOfItems", count);
 
-    let client = ClientBuilder::new(reqwest::Client::new())
-        .with(TracingMiddleware::<SpanBackendWithUrl>::new())
-        .build();
+    let client = reqwest::Client::new();
 
     let resp = client
         .post(quote_service_addr)

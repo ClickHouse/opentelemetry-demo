@@ -3,7 +3,7 @@ mode: daemonset
 
 image:
   repository: otel/opentelemetry-collector-contrib
-  tag: 0.123.0
+  tag: 0.146.1
    
 # Required to use the kubeletstats cpu/memory utilization metrics
 clusterRole:
@@ -80,7 +80,7 @@ config:
  
   exporters:
     otlphttp:
-      endpoint: 'http://my-hyperdx-hdx-oss-v2-otel-collector:4318'
+      endpoint: 'http://my-clickstack-otel-collector:4318'
       compression: gzip
       headers:
         authorization: "${env:HYPERDX_API_KEY}"

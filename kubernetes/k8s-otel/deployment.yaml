@@ -3,7 +3,7 @@ mode: deployment
 
 image:
   repository: otel/opentelemetry-collector-contrib
-  tag: 0.123.0
+  tag: 0.146.1
  
 # We only want one of these collectors - any more and we'd produce duplicate data
 replicaCount: 1
@@ -39,7 +39,7 @@ extraEnvs:
 config:
   exporters:
     otlphttp:
-      endpoint: 'http://my-hyperdx-hdx-oss-v2-otel-collector:4318'
+      endpoint: 'http://my-clickstack-otel-collector:4318'
       compression: gzip
       headers:
         authorization: "${env:HYPERDX_API_KEY}"

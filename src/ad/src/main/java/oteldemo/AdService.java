@@ -337,6 +337,54 @@ public final class AdService {
         span.setAttribute("app.infra.connection_pool_active", tlr.nextInt(1, 100));
         span.setAttribute("app.infra.cache_hit_rate", Math.round(tlr.nextDouble(0.5, 0.99) * 1000.0) / 1000.0);
 
+        // Extended ad serving - creative and media
+        span.setAttribute("app.ads.creative.width_px", new int[]{728, 300, 160, 320, 250, 970}[tlr.nextInt(6)]);
+        span.setAttribute("app.ads.creative.height_px", new int[]{90, 250, 600, 50, 250, 250}[tlr.nextInt(6)]);
+        span.setAttribute("app.ads.creative.file_type", new String[]{"image/png", "image/jpeg", "image/webp", "image/gif", "video/mp4", "text/html"}[tlr.nextInt(6)]);
+        span.setAttribute("app.ads.creative.load_time_ms", tlr.nextInt(10, 500));
+        span.setAttribute("app.ads.creative.cdn_origin", new String[]{"cloudfront-us", "cloudfront-eu", "cloudflare", "fastly", "akamai"}[tlr.nextInt(5)]);
+        span.setAttribute("app.ads.creative.cached_at_edge", tlr.nextBoolean());
+        span.setAttribute("app.ads.creative.a_b_variant", new String[]{"original", "variant-a", "variant-b", "seasonal"}[tlr.nextInt(4)]);
+        span.setAttribute("app.ads.creative.color_scheme", new String[]{"light", "dark", "brand-primary", "seasonal-holiday"}[tlr.nextInt(4)]);
+        span.setAttribute("app.ads.creative.cta_text", new String[]{"Shop Now", "Learn More", "Buy Today", "Get 50% Off", "Free Shipping", "Limited Time"}[tlr.nextInt(6)]);
+        span.setAttribute("app.ads.creative.has_animation", tlr.nextBoolean());
+        span.setAttribute("app.ads.creative.accessibility_alt_text", tlr.nextBoolean());
+
+        // Advertiser and billing context
+        span.setAttribute("app.ads.advertiser.id", "adv-" + tlr.nextInt(1000, 9999));
+        span.setAttribute("app.ads.advertiser.name", new String[]{"AstroCorp", "SkyView Inc", "OpticsWorld", "StarGazer Ltd", "TeleStar"}[tlr.nextInt(5)]);
+        span.setAttribute("app.ads.advertiser.account_type", new String[]{"self-serve", "managed", "agency", "enterprise"}[tlr.nextInt(4)]);
+        span.setAttribute("app.ads.advertiser.billing_type", new String[]{"prepaid", "postpaid", "credit-line", "invoice"}[tlr.nextInt(4)]);
+        span.setAttribute("app.ads.advertiser.payment_status", new String[]{"current", "current", "current", "overdue", "suspended"}[tlr.nextInt(5)]);
+        span.setAttribute("app.ads.advertiser.total_spend_usd", Math.round(tlr.nextDouble(100, 500000) * 100.0) / 100.0);
+        span.setAttribute("app.ads.advertiser.lifetime_impressions", tlr.nextLong(1000, 100000000));
+
+        // User intent and contextual signals
+        span.setAttribute("app.ads.signal.page_category", new String[]{"product", "category", "search", "homepage", "cart", "blog"}[tlr.nextInt(6)]);
+        span.setAttribute("app.ads.signal.user_intent", new String[]{"browsing", "comparing", "ready-to-buy", "researching", "returning"}[tlr.nextInt(5)]);
+        span.setAttribute("app.ads.signal.session_depth", tlr.nextInt(1, 20));
+        span.setAttribute("app.ads.signal.time_on_site_sec", tlr.nextInt(10, 3600));
+        span.setAttribute("app.ads.signal.pages_viewed", tlr.nextInt(1, 30));
+        span.setAttribute("app.ads.signal.search_query_present", tlr.nextBoolean());
+        span.setAttribute("app.ads.signal.cart_value_usd", Math.round(tlr.nextDouble(0, 2000) * 100.0) / 100.0);
+        span.setAttribute("app.ads.signal.returning_customer", tlr.nextBoolean());
+
+        // Attribution and measurement
+        span.setAttribute("app.ads.attribution.window_days", new int[]{1, 7, 14, 28, 30}[tlr.nextInt(5)]);
+        span.setAttribute("app.ads.attribution.model", new String[]{"last-click", "first-click", "linear", "time-decay", "data-driven"}[tlr.nextInt(5)]);
+        span.setAttribute("app.ads.attribution.view_through", tlr.nextBoolean());
+        span.setAttribute("app.ads.attribution.click_through", tlr.nextBoolean());
+        span.setAttribute("app.ads.measurement.viewable", tlr.nextDouble() > 0.15);
+        span.setAttribute("app.ads.measurement.in_view_time_ms", tlr.nextInt(0, 30000));
+        span.setAttribute("app.ads.measurement.mrc_viewable", tlr.nextDouble() > 0.2);
+
+        // Regulatory and compliance
+        span.setAttribute("app.ads.compliance.gdpr_consent", tlr.nextBoolean());
+        span.setAttribute("app.ads.compliance.ccpa_opt_out", tlr.nextDouble() < 0.1);
+        span.setAttribute("app.ads.compliance.coppa_applicable", false);
+        span.setAttribute("app.ads.compliance.ads_txt_verified", tlr.nextBoolean());
+        span.setAttribute("app.ads.compliance.sellers_json_verified", tlr.nextBoolean());
+
         adRequestsCounter.add(
             1,
             Attributes.of(

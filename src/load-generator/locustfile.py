@@ -165,6 +165,52 @@ def generate_session_attributes():
         "performance.dns_lookup_ms": str(random.randint(1, 150)),
         "performance.tcp_connect_ms": str(random.randint(5, 200)),
         "performance.ttfb_ms": str(random.randint(50, 2000)),
+        # Additional session context
+        "session.start_timestamp": str(int(time.time() * 1000)),
+        "session.entry_page": random.choice(["/", "/deals", "/products", "/cart", "/search"]),
+        "session.page_views": str(random.randint(1, 50)),
+        "session.duration_sec": str(random.randint(10, 7200)),
+        "session.bounce": random.choice(["true", "false"]),
+        "session.is_new": random.choice(["true", "false"]),
+        "session.referrer_domain": random.choice(REFERRERS),
+        "session.utm_source": random.choice(["google", "facebook", "twitter", "newsletter", "direct", "bing", "instagram", "tiktok"]),
+        "session.utm_medium": random.choice(["cpc", "organic", "social", "email", "referral", "display", "affiliate"]),
+        "session.utm_campaign": random.choice(CAMPAIGN_IDS) if random.random() < 0.5 else "none",
+        "session.utm_content": random.choice(["hero-banner", "sidebar-ad", "footer-link", "email-cta", "social-post", "none"]),
+        "session.utm_term": random.choice(["telescopes", "binoculars", "astronomy", "stargazing", "optics", "none"]),
+        # User behavioral signals
+        "user.returning_visitor": random.choice(["true", "false"]),
+        "user.days_since_last_visit": str(random.choice([0, 1, 3, 7, 14, 30, 60, 90, 180, 365])),
+        "user.cart_abandonment_count": str(random.randint(0, 10)),
+        "user.wishlist_items_count": str(random.randint(0, 25)),
+        "user.reviews_written": str(random.randint(0, 20)),
+        "user.support_tickets_open": str(random.randint(0, 3)),
+        "user.notification_preference": random.choice(["all", "transactional-only", "none", "marketing-weekly"]),
+        "user.preferred_payment": random.choice(["credit-card", "debit-card", "paypal", "apple-pay", "google-pay", "klarna"]),
+        "user.preferred_shipping": random.choice(["standard", "express", "next-day", "pickup"]),
+        "user.loyalty_points_balance": str(random.randint(0, 50000)),
+        "user.loyalty_status": random.choice(["none", "bronze", "silver", "gold", "platinum"]),
+        # Device extended
+        "device.manufacturer": random.choice(["Apple", "Samsung", "Google", "Lenovo", "Dell", "HP", "Microsoft", "Huawei", "OnePlus", "Sony"]),
+        "device.model": random.choice(["iPhone 15 Pro", "Galaxy S24", "Pixel 8", "ThinkPad X1", "MacBook Pro", "Surface Pro", "iPad Air"]),
+        "device.os_version": random.choice(["17.3", "14.0", "11.0", "23H2", "14.2", "22.04"]),
+        "device.browser_version": random.choice(["120.0", "119.0", "121.0", "17.2", "118.0"]),
+        "device.screen_dpi": str(random.choice([72, 96, 120, 160, 240, 320, 480])),
+        "device.color_depth": str(random.choice([24, 32])),
+        "device.touch_support": random.choice(["true", "false"]),
+        "device.webgl_support": random.choice(["true", "true", "true", "false"]),
+        "device.cookie_enabled": "true",
+        "device.language": random.choice(LOCALES),
+        # Accessibility
+        "accessibility.screen_reader": random.choice(["true", "false", "false", "false", "false"]),
+        "accessibility.high_contrast": random.choice(["true", "false", "false", "false"]),
+        "accessibility.reduced_motion": random.choice(["true", "false", "false", "false"]),
+        "accessibility.font_size_preference": random.choice(["default", "large", "x-large"]),
+        # A/B testing extended
+        "experiment.checkout_variant": random.choice(["control", "single-page", "multi-step", "express"]),
+        "experiment.pricing_variant": random.choice(["standard", "dynamic", "anchored", "tiered"]),
+        "experiment.search_variant": random.choice(["keyword", "semantic", "hybrid", "visual"]),
+        "experiment.recommendation_variant": random.choice(["collaborative", "content-based", "hybrid", "trending"]),
     }
     return attrs
 
@@ -263,6 +309,58 @@ def generate_log_context(action, **extra):
         "otel.signal": "log",
         "otel.dropped_attributes_count": random.choice([0, 0, 0, 0, 1, 2]),
         "otel.dropped_events_count": 0,
+
+        # Security context
+        "security.auth_method": random.choice(["jwt", "oauth2", "session-cookie", "api-key", "saml"]),
+        "security.token_age_sec": random.randint(0, 3600),
+        "security.token_refresh": random.choice([True, False]),
+        "security.ip_reputation_score": round(random.uniform(0, 1), 3),
+        "security.geo_velocity_check": random.choice(["pass", "pass", "pass", "warn", "fail"]),
+        "security.bot_detection_score": round(random.uniform(0, 1), 3),
+        "security.fingerprint_hash": hashlib.sha256(str(random.randint(1, 100000)).encode()).hexdigest()[:16],
+        "security.cors_origin_valid": True,
+        "security.csrf_token_valid": True,
+        "security.content_type_valid": True,
+
+        # Session analytics
+        "analytics.session_id": str(uuid.uuid4()),
+        "analytics.page_view_id": str(uuid.uuid4()),
+        "analytics.interaction_id": str(uuid.uuid4()),
+        "analytics.funnel_stage": random.choice(["awareness", "consideration", "decision", "purchase", "retention"]),
+        "analytics.conversion_probability": round(random.uniform(0, 1), 3),
+        "analytics.engagement_score": random.randint(0, 100),
+        "analytics.time_to_interaction_ms": random.randint(100, 10000),
+        "analytics.scroll_depth_pct": random.randint(0, 100),
+        "analytics.click_count": random.randint(0, 50),
+        "analytics.form_interactions": random.randint(0, 20),
+        "analytics.errors_encountered": random.randint(0, 3),
+        "analytics.api_calls_count": random.randint(1, 30),
+        "analytics.data_transferred_kb": random.randint(10, 5000),
+
+        # Performance extended
+        "perf.dom_interactive_ms": random.randint(200, 5000),
+        "perf.dom_complete_ms": random.randint(500, 10000),
+        "perf.first_paint_ms": random.randint(100, 3000),
+        "perf.first_contentful_paint_ms": random.randint(200, 5000),
+        "perf.largest_contentful_paint_ms": random.randint(500, 8000),
+        "perf.cumulative_layout_shift": round(random.uniform(0, 0.5), 3),
+        "perf.first_input_delay_ms": random.randint(1, 500),
+        "perf.time_to_interactive_ms": random.randint(500, 10000),
+        "perf.total_blocking_time_ms": random.randint(0, 2000),
+        "perf.resource_count": random.randint(20, 200),
+        "perf.js_heap_size_mb": random.randint(10, 500),
+
+        # Error tracking
+        "error.handled": random.choice([True, True, True, True, False]),
+        "error.retry_eligible": random.choice([True, False]),
+        "error.fallback_activated": random.choice([True, False, False, False, False]),
+        "error.circuit_breaker_tripped": random.choice([True, False, False, False, False, False]),
+
+        # Business context
+        "business.revenue_impact": random.choice(["none", "low", "medium", "high", "critical"]),
+        "business.transaction_type": random.choice(["browse", "search", "add-to-cart", "checkout", "payment", "confirmation"]),
+        "business.customer_journey_stage": random.choice(["discovery", "evaluation", "purchase", "post-purchase", "support"]),
+        "business.channel": random.choice(["web", "mobile-app", "api", "partner", "in-store-kiosk"]),
     }
     ctx.update(extra)
     return ctx

@@ -379,6 +379,75 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		attribute.Int("app.infra.rate_limit_remaining", rand.Intn(1000)+100),
 	)
 
+	// Additional span attributes - user behavioral and analytics context
+	span.SetAttributes(
+		// User behavioral signals (from baggage)
+		attribute.String("user.returning_visitor", getBaggageValue(ctx, "user.returning_visitor")),
+		attribute.String("user.days_since_last_visit", getBaggageValue(ctx, "user.days_since_last_visit")),
+		attribute.String("user.cart_abandonment_count", getBaggageValue(ctx, "user.cart_abandonment_count")),
+		attribute.String("user.wishlist_items_count", getBaggageValue(ctx, "user.wishlist_items_count")),
+		attribute.String("user.loyalty_points_balance", getBaggageValue(ctx, "user.loyalty_points_balance")),
+		attribute.String("user.loyalty_status", getBaggageValue(ctx, "user.loyalty_status")),
+		attribute.String("user.preferred_payment", getBaggageValue(ctx, "user.preferred_payment")),
+		attribute.String("user.preferred_shipping", getBaggageValue(ctx, "user.preferred_shipping")),
+		attribute.String("user.notification_preference", getBaggageValue(ctx, "user.notification_preference")),
+
+		// Session analytics
+		attribute.String("session.utm_source", getBaggageValue(ctx, "session.utm_source")),
+		attribute.String("session.utm_medium", getBaggageValue(ctx, "session.utm_medium")),
+		attribute.String("session.utm_campaign", getBaggageValue(ctx, "session.utm_campaign")),
+		attribute.String("session.page_views", getBaggageValue(ctx, "session.page_views")),
+		attribute.String("session.duration_sec", getBaggageValue(ctx, "session.duration_sec")),
+
+		// Device extended
+		attribute.String("device.manufacturer", getBaggageValue(ctx, "device.manufacturer")),
+		attribute.String("device.model", getBaggageValue(ctx, "device.model")),
+		attribute.String("device.os_version", getBaggageValue(ctx, "device.os_version")),
+		attribute.String("device.browser_version", getBaggageValue(ctx, "device.browser_version")),
+
+		// Accessibility
+		attribute.String("accessibility.screen_reader", getBaggageValue(ctx, "accessibility.screen_reader")),
+		attribute.String("accessibility.high_contrast", getBaggageValue(ctx, "accessibility.high_contrast")),
+		attribute.String("accessibility.reduced_motion", getBaggageValue(ctx, "accessibility.reduced_motion")),
+
+		// A/B testing extended
+		attribute.String("experiment.checkout_variant", getBaggageValue(ctx, "experiment.checkout_variant")),
+		attribute.String("experiment.pricing_variant", getBaggageValue(ctx, "experiment.pricing_variant")),
+
+		// Checkout-specific analytics
+		attribute.String("app.checkout.funnel_step", "payment-submitted"),
+		attribute.Int("app.checkout.funnel_step_number", 4),
+		attribute.Int("app.checkout.time_on_shipping_step_sec", rand.Intn(120)+5),
+		attribute.Int("app.checkout.time_on_payment_step_sec", rand.Intn(180)+10),
+		attribute.Int("app.checkout.time_on_review_step_sec", rand.Intn(60)+3),
+		attribute.Int("app.checkout.form_field_corrections", rand.Intn(5)),
+		attribute.Bool("app.checkout.address_autocomplete_used", rand.Float64() < 0.4),
+		attribute.Bool("app.checkout.saved_payment_used", rand.Float64() < 0.3),
+		attribute.Bool("app.checkout.saved_address_used", rand.Float64() < 0.35),
+		attribute.String("app.checkout.validation_errors", []string{"none", "none", "none", "invalid-zip", "invalid-email", "card-declined"}[rand.Intn(6)]),
+		attribute.Int("app.checkout.page_reload_count", rand.Intn(3)),
+		attribute.Bool("app.checkout.terms_accepted", true),
+		attribute.Bool("app.checkout.newsletter_opted_in", rand.Float64() < 0.2),
+		attribute.String("app.checkout.device_fingerprint", uuid.New().String()[:16]),
+		attribute.Float64("app.checkout.conversion_probability", rand.Float64()),
+		attribute.String("app.checkout.abandonment_risk", []string{"low", "low", "medium", "high"}[rand.Intn(4)]),
+
+		// Logistics
+		attribute.Bool("app.logistics.split_shipment", rand.Float64() < 0.1),
+		attribute.Int("app.logistics.packages_count", rand.Intn(3)+1),
+		attribute.String("app.logistics.nearest_warehouse", warehouseLocations[rand.Intn(len(warehouseLocations))]),
+		attribute.Int("app.logistics.warehouse_distance_km", rand.Intn(3000)+10),
+		attribute.Bool("app.logistics.same_day_eligible", rand.Float64() < 0.15),
+		attribute.Bool("app.logistics.gift_wrapping_requested", rand.Float64() < 0.08),
+		attribute.String("app.logistics.customs_declaration", []string{"not-required", "not-required", "not-required", "standard", "detailed"}[rand.Intn(5)]),
+
+		// Revenue attribution
+		attribute.String("app.attribution.first_touch_channel", getBaggageValue(ctx, "traffic.channel")),
+		attribute.String("app.attribution.last_touch_channel", []string{"direct", "organic-search", "paid-search", "email", "social"}[rand.Intn(5)]),
+		attribute.String("app.attribution.model", []string{"last-click", "first-click", "linear", "time-decay", "position-based"}[rand.Intn(5)]),
+		attribute.Float64("app.attribution.campaign_revenue_usd", rand.Float64()*500),
+	)
+
 	log.WithFields(logrus.Fields{
 		"app.user.id":                  req.UserId,
 		"app.user.currency":            req.UserCurrency,
@@ -529,7 +598,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	if cs.kafkaBrokerSvcAddr != "" {
 		log.WithFields(logrus.Fields{
 			"app.kafka.topic":           "orders",
-			"app.kafka.broker":          svc.kafkaBrokerSvcAddr,
+			"app.kafka.broker":          cs.kafkaBrokerSvcAddr,
 			"app.order.id":              orderResult.OrderId,
 			"app.checkout.id":           checkoutID,
 			"app.kafka.partition":       rand.Intn(12),

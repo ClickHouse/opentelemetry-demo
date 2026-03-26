@@ -132,6 +132,50 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
         span.set_attribute("app.processing.total_time_ms", round(total_time_ms, 2))
         span.set_attribute("app.processing.overhead_ms", round(total_time_ms - inference_time, 2))
 
+        # Extended ML pipeline attributes
+        span.set_attribute("app.ml.embedding_dim", random.choice([64, 128, 256, 512, 768, 1024]))
+        span.set_attribute("app.ml.embedding_lookup_ms", round(random.uniform(0.5, 20), 2))
+        span.set_attribute("app.ml.nearest_neighbors_k", random.randint(10, 200))
+        span.set_attribute("app.ml.similarity_metric", random.choice(["cosine", "euclidean", "dot-product", "jaccard"]))
+        span.set_attribute("app.ml.reranking_applied", random.choice([True, False]))
+        span.set_attribute("app.ml.reranking_model", random.choice(["xgboost-v2", "lightgbm-v3", "neural-reranker-v1", "none"]))
+        span.set_attribute("app.ml.reranking_time_ms", round(random.uniform(1, 30), 2))
+        span.set_attribute("app.ml.cold_start_fallback", random.random() < 0.05)
+        span.set_attribute("app.ml.exploration_rate", round(random.uniform(0.01, 0.15), 3))
+        span.set_attribute("app.ml.exploitation_rate", round(random.uniform(0.85, 0.99), 3))
+        span.set_attribute("app.ml.bandit_arm_selected", random.choice(["popular", "personalized", "diverse", "trending"]))
+        span.set_attribute("app.ml.feature_importance_top", random.choice(["purchase_history", "browse_history", "category_affinity", "price_sensitivity", "brand_loyalty"]))
+        span.set_attribute("app.ml.model_staleness_hours", random.randint(0, 72))
+        span.set_attribute("app.ml.training_data_size", random.randint(100000, 10000000))
+        span.set_attribute("app.ml.online_learning_enabled", random.choice([True, False]))
+
+        # Filtering and business rules
+        span.set_attribute("app.filter.out_of_stock_removed", random.randint(0, 10))
+        span.set_attribute("app.filter.price_range_applied", random.choice([True, False]))
+        span.set_attribute("app.filter.brand_exclusion_applied", random.choice([True, False]))
+        span.set_attribute("app.filter.age_restriction_applied", random.choice([True, False, False, False]))
+        span.set_attribute("app.filter.geo_restriction_applied", random.choice([True, False, False, False]))
+        span.set_attribute("app.filter.duplicate_removed", random.randint(0, 5))
+        span.set_attribute("app.filter.previously_purchased_removed", random.randint(0, 3))
+        span.set_attribute("app.filter.total_rules_evaluated", random.randint(5, 25))
+        span.set_attribute("app.filter.total_items_removed", random.randint(0, 20))
+
+        # Personalization context
+        span.set_attribute("app.personalization.user_profile_exists", random.choice([True, True, True, False]))
+        span.set_attribute("app.personalization.profile_completeness_pct", random.randint(10, 100))
+        span.set_attribute("app.personalization.interaction_history_count", random.randint(0, 500))
+        span.set_attribute("app.personalization.last_interaction_days_ago", random.randint(0, 365))
+        span.set_attribute("app.personalization.preference_categories", ",".join(random.sample(["binoculars", "telescopes", "accessories", "books", "travel", "optics", "mounts"], random.randint(1, 4))))
+        span.set_attribute("app.personalization.price_sensitivity_score", round(random.uniform(0, 1), 3))
+        span.set_attribute("app.personalization.brand_affinity_top", random.choice(["Celestron", "Meade", "Orion", "Sky-Watcher", "Nikon", "none"]))
+
+        # Quality metrics for the recommendations
+        span.set_attribute("app.quality.mean_relevance_score", round(random.uniform(0.3, 0.95), 3))
+        span.set_attribute("app.quality.price_diversity_index", round(random.uniform(0.1, 1.0), 3))
+        span.set_attribute("app.quality.category_coverage", round(random.uniform(0.1, 0.8), 3))
+        span.set_attribute("app.quality.freshness_score", round(random.uniform(0.3, 1.0), 3))
+        span.set_attribute("app.quality.popularity_bias", round(random.uniform(0.0, 0.8), 3))
+
         logger.info(f"Receive ListRecommendations for product ids:{prod_list}", extra={
             "recommendation.operation": "list_recommendations",
             "recommendation.request_id": str(uuid.uuid4()),

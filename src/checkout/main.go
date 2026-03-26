@@ -5,8 +5,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -15,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/baggage"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 
@@ -239,13 +243,175 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
+// getBaggageValue extracts a baggage value from context
+func getBaggageValue(ctx context.Context, key string) string {
+	bag := baggage.FromContext(ctx)
+	m := bag.Member(key)
+	return m.Value()
+}
+
+// sha256Short returns a short sha256 hash
+func sha256Short(s string) string {
+	h := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(h[:])[:16]
+}
+
+var (
+	riskEngines           = []string{"fraud-shield-v3", "ml-scorer-v2", "rule-engine-v1", "behavioral-analysis-v1"}
+	paymentGateways       = []string{"stripe", "adyen", "braintree", "square", "worldpay", "cybersource"}
+	shippingCarriers      = []string{"fedex", "ups", "usps", "dhl", "amazon-logistics", "ontrac"}
+	shippingMethods       = []string{"standard", "express", "next-day", "two-day", "economy", "freight"}
+	warehouseLocations    = []string{"us-east-1-wh", "us-west-2-wh", "eu-west-1-wh", "ap-southeast-1-wh", "us-central-1-wh"}
+	fulfillmentCenters    = []string{"FC-NYC-01", "FC-LAX-02", "FC-ORD-03", "FC-LHR-04", "FC-NRT-05", "FC-SYD-06"}
+	promotionTypes        = []string{"percentage-off", "fixed-amount", "bogo", "free-shipping", "bundle-deal", "loyalty-reward", "first-order", "referral-credit"}
+	taxJurisdictions      = []string{"US-NY", "US-CA", "US-TX", "US-WA", "US-FL", "GB-ENG", "DE-BY", "FR-IDF", "JP-13", "CA-ON"}
+	inventoryStatuses     = []string{"in-stock", "low-stock", "backordered", "pre-order", "limited-edition"}
+	checkoutFlows         = []string{"standard", "express", "one-click", "guest", "subscription", "gift"}
+	pricingStrategies     = []string{"standard", "dynamic", "promotional", "clearance", "membership", "wholesale"}
+	complianceRegions     = []string{"gdpr-eu", "ccpa-us", "lgpd-br", "pipa-kr", "appi-jp", "pdpa-sg"}
+	retryReasons          = []string{"none", "timeout", "rate-limit", "transient-error", "network-blip"}
+	authMethods           = []string{"jwt", "oauth2", "api-key", "session-cookie", "saml", "mfa-totp"}
+)
+
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
 	span := trace.SpanFromContext(ctx)
+
+	// Core business attributes
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),
 		attribute.String("app.user.currency", req.UserCurrency),
 	)
-	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
+
+	// Propagated baggage attributes
+	baggageKeys := []string{
+		"user.tier", "user.locale", "user.country", "user.timezone",
+		"user.account_age_days", "user.total_orders", "user.lifetime_value_usd",
+		"user.segment", "device.type", "device.screen_resolution", "client.platform",
+		"client.sdk_version", "client.browser", "client.os", "network.type",
+		"traffic.referrer", "traffic.campaign_id", "traffic.channel",
+		"experiment.group", "experiment.id", "feature_flags.active",
+		"geo.city", "geo.region", "geo.postal_code",
+		"privacy.consent_analytics", "privacy.consent_marketing",
+		"request.correlation_id", "session.id", "user.anonymous_id",
+		"device.id", "content.group",
+	}
+	for _, key := range baggageKeys {
+		if v := getBaggageValue(ctx, key); v != "" {
+			span.SetAttributes(attribute.String(key, v))
+		}
+	}
+
+	// Rich checkout context attributes
+	requestStartTime := time.Now()
+	checkoutID := uuid.New().String()
+	span.SetAttributes(
+		attribute.String("app.checkout.id", checkoutID),
+		attribute.String("app.checkout.flow", checkoutFlows[rand.Intn(len(checkoutFlows))]),
+		attribute.String("app.checkout.pricing_strategy", pricingStrategies[rand.Intn(len(pricingStrategies))]),
+		attribute.String("app.checkout.compliance_region", complianceRegions[rand.Intn(len(complianceRegions))]),
+		attribute.String("app.checkout.auth_method", authMethods[rand.Intn(len(authMethods))]),
+		attribute.Int64("app.checkout.timestamp_epoch_ms", requestStartTime.UnixMilli()),
+		attribute.String("app.checkout.idempotency_key", uuid.New().String()),
+		attribute.String("app.checkout.request_fingerprint", sha256Short(req.UserId+checkoutID)),
+		attribute.Bool("app.checkout.is_retry", rand.Float64() < 0.05),
+		attribute.String("app.checkout.retry_reason", retryReasons[rand.Intn(len(retryReasons))]),
+		attribute.Int("app.checkout.retry_count", rand.Intn(3)),
+
+		// Risk and fraud attributes
+		attribute.Float64("app.risk.score", rand.Float64()*100),
+		attribute.String("app.risk.engine", riskEngines[rand.Intn(len(riskEngines))]),
+		attribute.String("app.risk.decision", []string{"approve", "approve", "approve", "review", "decline"}[rand.Intn(5)]),
+		attribute.Int("app.risk.evaluation_time_ms", rand.Intn(150)+10),
+		attribute.Bool("app.risk.velocity_check_passed", rand.Float64() > 0.02),
+		attribute.Int("app.risk.signals_evaluated", rand.Intn(25)+5),
+		attribute.String("app.risk.model_version", fmt.Sprintf("v%d.%d.%d", rand.Intn(3)+1, rand.Intn(10), rand.Intn(20))),
+
+		// Shipping attributes
+		attribute.String("app.shipping.carrier", shippingCarriers[rand.Intn(len(shippingCarriers))]),
+		attribute.String("app.shipping.method", shippingMethods[rand.Intn(len(shippingMethods))]),
+		attribute.Int("app.shipping.estimated_days", rand.Intn(14)+1),
+		attribute.String("app.shipping.warehouse", warehouseLocations[rand.Intn(len(warehouseLocations))]),
+		attribute.String("app.shipping.fulfillment_center", fulfillmentCenters[rand.Intn(len(fulfillmentCenters))]),
+		attribute.Bool("app.shipping.signature_required", rand.Float64() < 0.2),
+		attribute.Bool("app.shipping.insurance_added", rand.Float64() < 0.15),
+		attribute.Float64("app.shipping.package_weight_kg", rand.Float64()*20+0.1),
+		attribute.String("app.shipping.package_dimensions", fmt.Sprintf("%dx%dx%d", rand.Intn(60)+10, rand.Intn(40)+10, rand.Intn(30)+5)),
+		attribute.String("app.shipping.destination.country", req.Address.GetCountry()),
+		attribute.String("app.shipping.destination.state", req.Address.GetState()),
+		attribute.String("app.shipping.destination.city", req.Address.GetCity()),
+		attribute.String("app.shipping.destination.zip", req.Address.GetZipCode()),
+
+		// Payment preprocessing attributes
+		attribute.String("app.payment.gateway", paymentGateways[rand.Intn(len(paymentGateways))]),
+		attribute.String("app.payment.method_type", []string{"credit-card", "credit-card", "credit-card", "debit-card", "digital-wallet"}[rand.Intn(5)]),
+		attribute.Bool("app.payment.3ds_required", rand.Float64() < 0.3),
+		attribute.String("app.payment.billing_country", req.Address.GetCountry()),
+
+		// Promotion/discount attributes
+		attribute.Bool("app.promotion.applied", rand.Float64() < 0.35),
+		attribute.String("app.promotion.code", fmt.Sprintf("PROMO%d", rand.Intn(1000))),
+		attribute.String("app.promotion.type", promotionTypes[rand.Intn(len(promotionTypes))]),
+		attribute.Float64("app.promotion.discount_amount", rand.Float64()*50),
+		attribute.Float64("app.promotion.discount_percent", float64(rand.Intn(50))),
+
+		// Tax attributes
+		attribute.String("app.tax.jurisdiction", taxJurisdictions[rand.Intn(len(taxJurisdictions))]),
+		attribute.Float64("app.tax.rate", float64(rand.Intn(25))/100.0),
+		attribute.Bool("app.tax.exempt", rand.Float64() < 0.05),
+		attribute.String("app.tax.calculation_method", []string{"inclusive", "exclusive"}[rand.Intn(2)]),
+
+		// Inventory attributes
+		attribute.String("app.inventory.status", inventoryStatuses[rand.Intn(len(inventoryStatuses))]),
+		attribute.Int("app.inventory.reserved_units", rand.Intn(10)+1),
+		attribute.String("app.inventory.reservation_id", uuid.New().String()),
+		attribute.Int64("app.inventory.reservation_ttl_sec", int64(rand.Intn(300)+60)),
+
+		// Infrastructure attributes
+		attribute.String("app.infra.handler_instance", fmt.Sprintf("checkout-%d", rand.Intn(10))),
+		attribute.Int("app.infra.goroutine_count", rand.Intn(500)+50),
+		attribute.Int64("app.infra.memory_alloc_bytes", int64(rand.Intn(500000000)+10000000)),
+		attribute.String("app.infra.deployment_id", fmt.Sprintf("deploy-%s", uuid.New().String()[:8])),
+		attribute.String("app.infra.canary_group", []string{"stable", "stable", "canary"}[rand.Intn(3)]),
+		attribute.String("app.infra.load_balancer_id", fmt.Sprintf("lb-%s", uuid.New().String()[:8])),
+		attribute.Int("app.infra.upstream_latency_ms", rand.Intn(200)+5),
+		attribute.Bool("app.infra.circuit_breaker_open", rand.Float64() < 0.01),
+		attribute.String("app.infra.rate_limit_bucket", fmt.Sprintf("checkout-%s", req.UserCurrency)),
+		attribute.Int("app.infra.rate_limit_remaining", rand.Intn(1000)+100),
+	)
+
+	log.WithFields(logrus.Fields{
+		"app.user.id":                  req.UserId,
+		"app.user.currency":            req.UserCurrency,
+		"app.checkout.id":              checkoutID,
+		"app.checkout.flow":            checkoutFlows[rand.Intn(len(checkoutFlows))],
+		"app.request.correlation_id":   uuid.New().String(),
+		"app.request.idempotency_key":  uuid.New().String(),
+		"app.request.timestamp_ms":     requestStartTime.UnixMilli(),
+		"app.request.priority":         []string{"critical", "high", "normal", "low"}[rand.Intn(4)],
+		"app.session.id":               getBaggageValue(ctx, "session.id"),
+		"app.user.tier":                getBaggageValue(ctx, "user.tier"),
+		"app.user.segment":             getBaggageValue(ctx, "user.segment"),
+		"app.user.country":             getBaggageValue(ctx, "user.country"),
+		"app.geo.city":                 getBaggageValue(ctx, "geo.city"),
+		"app.device.type":              getBaggageValue(ctx, "device.type"),
+		"app.client.platform":          getBaggageValue(ctx, "client.platform"),
+		"app.traffic.channel":          getBaggageValue(ctx, "traffic.channel"),
+		"app.traffic.campaign_id":      getBaggageValue(ctx, "traffic.campaign_id"),
+		"app.experiment.id":            getBaggageValue(ctx, "experiment.id"),
+		"app.experiment.group":         getBaggageValue(ctx, "experiment.group"),
+		"net.peer.address":             fmt.Sprintf("10.0.%d.%d", rand.Intn(256), rand.Intn(254)+1),
+		"net.host.port":                5050,
+		"http.request_content_length":  rand.Intn(5000) + 100,
+		"infra.handler_instance":       fmt.Sprintf("checkout-%d", rand.Intn(10)),
+		"infra.goroutine_count":        rand.Intn(500) + 50,
+		"infra.memory_alloc_mb":        rand.Intn(500) + 50,
+		"infra.gc_pause_ms":            rand.Intn(50),
+		"infra.upstream_latency_ms":    rand.Intn(200) + 5,
+		"infra.circuit_breaker_state":  []string{"closed", "closed", "closed", "half-open", "open"}[rand.Intn(5)],
+		"infra.rate_limit_remaining":   rand.Intn(1000) + 100,
+		"infra.connection_pool_active": rand.Intn(50) + 1,
+		"infra.deployment_id":          fmt.Sprintf("deploy-%s", uuid.New().String()[:8]),
+	}).Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
 
 	var err error
 	defer func() {
@@ -278,7 +444,19 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to charge card: %+v", err)
 	}
-	log.Infof("payment went through (transaction_id: %s)", txID)
+	log.WithFields(logrus.Fields{
+		"app.payment.transaction_id":  txID,
+		"app.payment.gateway":         paymentGateways[rand.Intn(len(paymentGateways))],
+		"app.payment.amount_units":    total.GetUnits(),
+		"app.payment.amount_nanos":    total.GetNanos(),
+		"app.payment.currency":        req.UserCurrency,
+		"app.payment.method":          []string{"credit-card", "credit-card", "debit-card", "digital-wallet"}[rand.Intn(4)],
+		"app.payment.processing_ms":   rand.Intn(1500) + 100,
+		"app.payment.risk_score":      rand.Float64() * 100,
+		"app.payment.3ds_used":        rand.Float64() < 0.3,
+		"app.checkout.id":             checkoutID,
+		"app.order.user_id":           req.UserId,
+	}).Infof("payment went through (transaction_id: %s)", txID)
 	span.AddEvent("charged",
 		trace.WithAttributes(attribute.String("app.payment.transaction.id", txID)))
 
@@ -308,17 +486,55 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		attribute.Float64("app.order.amount", totalPriceFloat),
 		attribute.Int("app.order.items.count", len(prep.orderItems)),
 		shippingTrackingAttribute,
+		// Additional order completion attributes
+		attribute.Float64("app.order.subtotal", totalPriceFloat-shippingCostFloat),
+		attribute.String("app.order.currency", req.UserCurrency),
+		attribute.String("app.order.status", "confirmed"),
+		attribute.Int64("app.order.completed_at_epoch_ms", time.Now().UnixMilli()),
+		attribute.Int("app.order.processing_time_ms", int(time.Since(requestStartTime).Milliseconds())),
+		attribute.String("app.order.confirmation_email", req.Email),
+		attribute.String("app.order.user_agent_hash", sha256Short(req.UserId)),
+		attribute.Bool("app.order.is_gift", rand.Float64() < 0.1),
+		attribute.Bool("app.order.requires_age_verification", rand.Float64() < 0.05),
+		attribute.String("app.order.fraud_check_result", "pass"),
+		attribute.Int("app.order.loyalty_points_earned", rand.Intn(500)+10),
+		attribute.String("app.order.estimated_delivery", time.Now().AddDate(0, 0, rand.Intn(14)+1).Format("2006-01-02")),
 	)
 
 	if err := cs.sendOrderConfirmation(ctx, req.Email, orderResult); err != nil {
-		log.Warnf("failed to send order confirmation to %q: %+v", req.Email, err)
+		log.WithFields(logrus.Fields{
+			"app.email.recipient":     req.Email,
+			"app.email.type":          "order-confirmation",
+			"app.email.error":         err.Error(),
+			"app.checkout.id":         checkoutID,
+			"app.order.id":            orderID.String(),
+			"app.email.retry_count":   0,
+			"app.email.template":      "order-confirmation-v3",
+			"app.email.provider":      []string{"sendgrid", "ses", "mailgun", "postmark"}[rand.Intn(4)],
+		}).Warnf("failed to send order confirmation to %q: %+v", req.Email, err)
 	} else {
-		log.Infof("order confirmation email sent to %q", req.Email)
+		log.WithFields(logrus.Fields{
+			"app.email.recipient":     req.Email,
+			"app.email.type":          "order-confirmation",
+			"app.email.status":        "sent",
+			"app.checkout.id":         checkoutID,
+			"app.order.id":            orderID.String(),
+			"app.email.template":      "order-confirmation-v3",
+			"app.email.provider":      []string{"sendgrid", "ses", "mailgun", "postmark"}[rand.Intn(4)],
+			"app.email.delivery_ms":   rand.Intn(2000) + 50,
+		}).Infof("order confirmation email sent to %q", req.Email)
 	}
 
 	// send to kafka only if kafka broker address is set
 	if cs.kafkaBrokerSvcAddr != "" {
-		log.Infof("sending to postProcessor")
+		log.WithFields(logrus.Fields{
+			"app.kafka.topic":           "orders",
+			"app.kafka.broker":          svc.kafkaBrokerSvcAddr,
+			"app.order.id":              orderResult.OrderId,
+			"app.checkout.id":           checkoutID,
+			"app.kafka.partition":       rand.Intn(12),
+			"app.kafka.message_size_bytes": rand.Intn(5000) + 200,
+		}).Infof("sending to postProcessor")
 		cs.sendToPostProcessor(ctx, orderResult)
 	}
 
@@ -369,6 +585,21 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 		attribute.Float64("app.shipping.amount", shippingCostFloat),
 		attribute.Int("app.cart.items.count", int(totalCart)),
 		attribute.Int("app.order.items.count", len(orderItems)),
+		// Cart analysis attributes
+		attribute.Int("app.cart.unique_items", len(cartItems)),
+		attribute.Int("app.cart.total_quantity", int(totalCart)),
+		attribute.Float64("app.cart.average_item_price", shippingCostFloat/float64(max(int(totalCart), 1))),
+		attribute.Bool("app.cart.has_heavy_items", rand.Float64() < 0.2),
+		attribute.Bool("app.cart.has_hazmat", rand.Float64() < 0.02),
+		attribute.Bool("app.cart.has_oversized", rand.Float64() < 0.05),
+		attribute.String("app.cart.primary_category", []string{"binoculars", "telescopes", "accessories", "assembly", "travel", "books"}[rand.Intn(6)]),
+		attribute.Int("app.cart.abandoned_count_prior", rand.Intn(5)),
+		attribute.String("app.cart.session_duration", fmt.Sprintf("%ds", rand.Intn(1800)+30)),
+		attribute.Int("app.cart.items_added_count", rand.Intn(10)+int(totalCart)),
+		attribute.Int("app.cart.items_removed_count", rand.Intn(3)),
+		attribute.Float64("app.shipping.quote_amount", shippingCostFloat),
+		attribute.String("app.shipping.quote_currency", userCurrency),
+		attribute.Int("app.shipping.quote_calculation_ms", rand.Intn(50)+5),
 	)
 	return out, nil
 }
@@ -517,14 +748,30 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 				attribute.Int("messaging.kafka.producer.duration_ms", int(time.Since(startTime).Milliseconds())),
 				attribute.KeyValue(semconv.MessagingKafkaMessageOffset(int(successMsg.Offset))),
 			)
-			log.Infof("Successful to write message. offset: %v, duration: %v", successMsg.Offset, time.Since(startTime))
+			log.WithFields(logrus.Fields{
+				"kafka.offset":             successMsg.Offset,
+				"kafka.duration_ms":        time.Since(startTime).Milliseconds(),
+				"kafka.topic":              kafka.Topic,
+				"kafka.partition":          successMsg.Partition,
+				"kafka.broker_id":          rand.Intn(5),
+				"kafka.ack_latency_ms":     rand.Intn(50) + 1,
+				"kafka.batch_size":         rand.Intn(10) + 1,
+				"kafka.compression":        []string{"snappy", "gzip", "lz4", "zstd", "none"}[rand.Intn(5)],
+				"kafka.message_size_bytes": rand.Intn(5000) + 200,
+			}).Infof("Successful to write message. offset: %v, duration: %v", successMsg.Offset, time.Since(startTime))
 		case errMsg := <-cs.KafkaProducerClient.Errors():
 			span.SetAttributes(
 				attribute.Bool("messaging.kafka.producer.success", false),
 				attribute.Int("messaging.kafka.producer.duration_ms", int(time.Since(startTime).Milliseconds())),
 			)
 			span.SetStatus(otelcodes.Error, errMsg.Err.Error())
-			log.Errorf("Failed to write message: %v", errMsg.Err)
+			log.WithFields(logrus.Fields{
+				"kafka.error":         errMsg.Err.Error(),
+				"kafka.topic":         kafka.Topic,
+				"kafka.duration_ms":   time.Since(startTime).Milliseconds(),
+				"kafka.retry_count":   rand.Intn(3),
+				"kafka.error_type":    []string{"network", "timeout", "leader-not-available", "broker-unavailable"}[rand.Intn(4)],
+			}).Errorf("Failed to write message: %v", errMsg.Err)
 		case <-ctx.Done():
 			span.SetAttributes(
 				attribute.Bool("messaging.kafka.producer.success", false),

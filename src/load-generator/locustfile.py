@@ -13,11 +13,12 @@ import re
 import hashlib
 import time
 import string
+import threading
 
 from locust import HttpUser, task, between
 from locust_plugins.users.playwright import PlaywrightUser, pw, PageWithRetry, event
 
-from opentelemetry import context, baggage, trace
+from opentelemetry import trace
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
@@ -43,11 +44,9 @@ from openfeature.contrib.hook.opentelemetry import TracingHook
 
 from playwright.async_api import Route, Request
 
-logger_provider = LoggerProvider(resource=Resource.create(
-        {
-            "service.name": "load-generator",
-        }
-    ),)
+_demo_resource = Resource.create({"service.name": "load-generator"})
+
+logger_provider = LoggerProvider(resource=_demo_resource)
 set_logger_provider(logger_provider)
 
 exporter = OTLPLogExporter(insecure=True)
@@ -58,11 +57,32 @@ handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
 logging.getLogger().addHandler(handler)
 logging.getLogger().setLevel(logging.INFO)
 
-exporter = OTLPMetricExporter(insecure=True)
-set_meter_provider(MeterProvider([PeriodicExportingMetricReader(exporter)]))
+set_meter_provider(MeterProvider(
+    metric_readers=[PeriodicExportingMetricReader(OTLPMetricExporter(insecure=True))],
+    resource=_demo_resource,
+))
 
-tracer_provider = TracerProvider()
+tracer_provider = TracerProvider(resource=_demo_resource)
 trace.set_tracer_provider(tracer_provider)
+
+# Per-greenlet store for session attributes; locust uses gevent which monkey-patches
+# threading.local so each simulated user gets its own isolated store.
+_session_store = threading.local()
+
+class _SessionAttributeSpanProcessor:
+    """Stamps session attributes onto every span without requiring baggage propagation."""
+    def on_start(self, span, parent_context=None):
+        attrs = getattr(_session_store, 'session_attrs', None)
+        if attrs:
+            span.set_attributes(attrs)
+    def on_end(self, span):
+        pass
+    def shutdown(self):
+        pass
+    def force_flush(self, timeout_millis=30000):
+        return True
+
+tracer_provider.add_span_processor(_SessionAttributeSpanProcessor())
 tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
 
 # Instrumenting manually to avoid error with locust gevent monkey
@@ -113,7 +133,7 @@ CUSTOMER_SEGMENTS = ["new-visitor", "returning-customer", "high-value", "at-risk
 FEATURE_FLAGS_ACTIVE = ["new-checkout", "ai-recommendations", "dynamic-pricing", "express-shipping", "wishlist-v2", "social-proof", "ar-preview", "voice-search", "crypto-payment", "subscription-model"]
 
 def generate_session_attributes():
-    """Generate a rich set of session-level attributes for baggage propagation."""
+    """Generate a rich set of session-level attributes to stamp onto spans."""
     session_id = str(uuid.uuid4())
     user_id = f"user-{random.randint(10000, 99999)}"
     device_id = str(uuid.uuid4())
@@ -230,9 +250,61 @@ REQUEST_PRIORITIES = ["critical", "high", "normal", "low", "background"]
 ERROR_CATEGORIES = ["none", "client-error", "server-error", "timeout", "network", "rate-limit"]
 DEPLOYMENT_STAGES = ["canary", "blue-green-active", "blue-green-standby", "rolling", "stable"]
 
+def generate_log_context_template():
+    """Generate per-user static log fields. Call once in on_start and store in _session_store."""
+    return {
+        # Client context — fixed for the lifetime of the simulated user
+        "client.user_agent_family": random.choice(BROWSERS),
+        "client.platform": random.choice(PLATFORMS),
+        "client.sdk_version": random.choice(SDK_VERSIONS),
+        "client.device_type": random.choice(DEVICE_TYPES),
+        "client.screen_resolution": random.choice(SCREEN_RESOLUTIONS),
+        "client.locale": random.choice(LOCALES),
+        "client.timezone": random.choice(TIMEZONES),
+        # User identity — stable per session
+        "user.id_hash": hashlib.sha256(str(random.randint(1, 100000)).encode()).hexdigest()[:12],
+        "user.session_id": str(uuid.uuid4()),
+        "user.segment": random.choice(CUSTOMER_SEGMENTS),
+        "user.tier": random.choice(USER_TIERS),
+        "user.auth_type": random.choice(AUTH_TOKEN_TYPES),
+        "user.is_authenticated": random.choice([True, True, True, False]),
+        "user.country": random.choice(COUNTRIES),
+        # Infrastructure — stable per instance
+        "infra.instance_id": f"load-gen-{random.randint(0, 9)}",
+        "infra.deployment_stage": random.choice(DEPLOYMENT_STAGES),
+        "infra.load_balancer_algo": random.choice(LOAD_BALANCER_ALGOS),
+        "infra.circuit_breaker_state": random.choice(CIRCUIT_STATES),
+        "infra.thread_count": random.randint(4, 64),
+        # Security identity — stable per session
+        "security.auth_method": random.choice(["jwt", "oauth2", "session-cookie", "api-key", "saml"]),
+        "security.fingerprint_hash": hashlib.sha256(str(random.randint(1, 100000)).encode()).hexdigest()[:16],
+        "security.cors_origin_valid": True,
+        "security.csrf_token_valid": True,
+        "security.content_type_valid": True,
+        # Analytics session — stable per session
+        "analytics.session_id": str(uuid.uuid4()),
+        # Observability constants
+        "otel.library.name": "load-generator",
+        "otel.library.version": "1.4.0",
+        "otel.signal": "log",
+    }
+
+
 def generate_log_context(action, **extra):
-    """Generate rich structured log context for any action."""
-    ctx = {
+    """Generate rich structured log context for any action.
+
+    Merges the per-user static template stored in _session_store (generated once in
+    on_start) with per-request dynamic fields, then applies action-specific overrides.
+    """
+    ctx = {}
+
+    # Merge in the per-user static template first (cheap dict copy)
+    template = getattr(_session_store, 'log_ctx_template', None)
+    if template:
+        ctx.update(template)
+
+    # Per-request dynamic fields (override any template values with the same key)
+    ctx.update({
         "log.action": action,
         "log.request_id": str(uuid.uuid4()),
         "log.correlation_id": str(uuid.uuid4()),
@@ -264,35 +336,12 @@ def generate_log_context(action, **extra):
         "net.peer_address": f"10.0.{random.randint(0, 255)}.{random.randint(1, 254)}",
         "net.peer_port": random.choice([80, 443, 8080, 8443, 3000, 4317, 50051, 9090]),
 
-        # Client context
-        "client.user_agent_family": random.choice(BROWSERS),
-        "client.platform": random.choice(PLATFORMS),
-        "client.sdk_version": random.choice(SDK_VERSIONS),
-        "client.device_type": random.choice(DEVICE_TYPES),
-        "client.screen_resolution": random.choice(SCREEN_RESOLUTIONS),
-        "client.locale": random.choice(LOCALES),
-        "client.timezone": random.choice(TIMEZONES),
-
-        # User context
-        "user.id_hash": hashlib.sha256(str(random.randint(1, 100000)).encode()).hexdigest()[:12],
-        "user.session_id": str(uuid.uuid4()),
-        "user.segment": random.choice(CUSTOMER_SEGMENTS),
-        "user.tier": random.choice(USER_TIERS),
-        "user.auth_type": random.choice(AUTH_TOKEN_TYPES),
-        "user.is_authenticated": random.choice([True, True, True, False]),
-        "user.country": random.choice(COUNTRIES),
-
-        # Infrastructure context
-        "infra.instance_id": f"load-gen-{random.randint(0, 9)}",
-        "infra.deployment_stage": random.choice(DEPLOYMENT_STAGES),
-        "infra.load_balancer_algo": random.choice(LOAD_BALANCER_ALGOS),
-        "infra.circuit_breaker_state": random.choice(CIRCUIT_STATES),
+        # Infrastructure (per-request dynamic readings)
         "infra.queue_depth": random.randint(0, 100),
         "infra.active_connections": random.randint(1, 500),
         "infra.memory_usage_mb": random.randint(64, 2048),
         "infra.cpu_usage_pct": round(random.uniform(1, 95), 1),
         "infra.gc_pause_ms": round(random.uniform(0, 50), 2),
-        "infra.thread_count": random.randint(4, 64),
 
         # Request priority and routing
         "request.priority": random.choice(REQUEST_PRIORITIES),
@@ -304,26 +353,17 @@ def generate_log_context(action, **extra):
         "request.feature_flags": ",".join(random.sample(FEATURE_FLAGS_ACTIVE, random.randint(0, 3))),
 
         # Observability metadata
-        "otel.library.name": "load-generator",
-        "otel.library.version": "1.4.0",
-        "otel.signal": "log",
         "otel.dropped_attributes_count": random.choice([0, 0, 0, 0, 1, 2]),
         "otel.dropped_events_count": 0,
 
-        # Security context
-        "security.auth_method": random.choice(["jwt", "oauth2", "session-cookie", "api-key", "saml"]),
+        # Security (per-request signals)
         "security.token_age_sec": random.randint(0, 3600),
         "security.token_refresh": random.choice([True, False]),
         "security.ip_reputation_score": round(random.uniform(0, 1), 3),
         "security.geo_velocity_check": random.choice(["pass", "pass", "pass", "warn", "fail"]),
         "security.bot_detection_score": round(random.uniform(0, 1), 3),
-        "security.fingerprint_hash": hashlib.sha256(str(random.randint(1, 100000)).encode()).hexdigest()[:16],
-        "security.cors_origin_valid": True,
-        "security.csrf_token_valid": True,
-        "security.content_type_valid": True,
 
-        # Session analytics
-        "analytics.session_id": str(uuid.uuid4()),
+        # Session analytics (per-request)
         "analytics.page_view_id": str(uuid.uuid4()),
         "analytics.interaction_id": str(uuid.uuid4()),
         "analytics.funnel_stage": random.choice(["awareness", "consideration", "decision", "purchase", "retention"]),
@@ -361,7 +401,9 @@ def generate_log_context(action, **extra):
         "business.transaction_type": random.choice(["browse", "search", "add-to-cart", "checkout", "payment", "confirmation"]),
         "business.customer_journey_stage": random.choice(["discovery", "evaluation", "purchase", "post-purchase", "support"]),
         "business.channel": random.choice(["web", "mobile-app", "api", "partner", "in-store-kiosk"]),
-    }
+    })
+
+    # Action-specific fields take highest priority
     ctx.update(extra)
     return ctx
 
@@ -601,11 +643,8 @@ class WebsiteUser(HttpUser):
             self.client.get("/")
 
     def on_start(self):
-        session_attrs = generate_session_attributes()
-        ctx = context.get_current()
-        for key, value in session_attrs.items():
-            ctx = baggage.set_baggage(key, value, context=ctx)
-        context.attach(ctx)
+        _session_store.session_attrs = generate_session_attributes()
+        _session_store.log_ctx_template = generate_log_context_template()
         self.index()
 
 

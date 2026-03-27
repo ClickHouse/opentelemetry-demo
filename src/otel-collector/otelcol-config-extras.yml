@@ -22,6 +22,7 @@ receivers:
       - endpoint: http://frontend-proxy:${env:ENVOY_PORT}
   docker_stats:
     endpoint: unix:///var/run/docker.sock
+    api_version: "1.41"
   redis:
     endpoint: "valkey-cart:6379"
     username: "valkey"
@@ -438,22 +439,16 @@ service:
     metrics:
       receivers: [hostmetrics, docker_stats, httpcheck/frontend-proxy, otlp, prometheus, redis]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse, file]
+      exporters: [clickhouse]
     traces:
       receivers: [otlp]
       processors: [memory_limiter, transform, batch]
-      exporters: [clickhouse, file]
+      exporters: [clickhouse]
     logs/out-default:
       receivers: [routing/logs]
       processors: [memory_limiter, transform, batch]
-      exporters: [clickhouse, file]
+      exporters: [clickhouse]
     logs/out-rrweb:
       receivers: [routing/logs]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse/rrweb, file]
-exporters:
-  file:
-    path: /data/sample.json
-    rotation:
-      max_megabytes: 10000
-      localtime: true
+      exporters: [clickhouse/rrweb]

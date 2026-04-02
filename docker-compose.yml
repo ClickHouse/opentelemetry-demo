@@ -26,6 +26,10 @@ services:
       dockerfile: ${ACCOUNTING_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-accounting
+    deploy:
+      resources:
+        limits:
+          memory: 120M
     restart: unless-stopped
     environment:
       - KAFKA_ADDR
@@ -51,6 +55,10 @@ services:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-ad
       args:
         OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
+    deploy:
+      resources:
+        limits:
+          memory: 300M
     restart: unless-stopped
     ports:
       - "${AD_PORT}"
@@ -81,6 +89,10 @@ services:
       dockerfile: ${CART_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-cart
+    deploy:
+      resources:
+        limits:
+          memory: 160M
     restart: unless-stopped
     ports:
       - "${CART_PORT}"
@@ -111,6 +123,10 @@ services:
       dockerfile: ${CHECKOUT_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-checkout
+    deploy:
+      resources:
+        limits:
+          memory: 20M
     restart: unless-stopped
     ports:
       - "${CHECKOUT_PORT}"
@@ -125,6 +141,7 @@ services:
       - PRODUCT_CATALOG_ADDR
       - SHIPPING_ADDR
       - KAFKA_ADDR
+      - GOMEMLIMIT=16MiB
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
@@ -161,6 +178,10 @@ services:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-currency
       args:
         OPENTELEMETRY_CPP_VERSION: ${OPENTELEMETRY_CPP_VERSION}
+    deploy:
+      resources:
+        limits:
+          memory: 20M
     restart: unless-stopped
     ports:
       - "${CURRENCY_PORT}"
@@ -183,6 +204,10 @@ services:
       dockerfile: ${EMAIL_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-email
+    deploy:
+      resources:
+        limits:
+          memory: 100M
     restart: unless-stopped
     ports:
       - "${EMAIL_PORT}"
@@ -208,6 +233,10 @@ services:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-fraud-detection
       args:
         OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
+    deploy:
+      resources:
+        limits:
+          memory: 300M
     restart: unless-stopped
     environment:
       - FLAGD_HOST
@@ -235,6 +264,10 @@ services:
       dockerfile: ${FRONTEND_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-frontend
+    deploy:
+      resources:
+        limits:
+          memory: 250M
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT}"
@@ -296,6 +329,10 @@ services:
     build:
       context: ./
       dockerfile: ${FRONTEND_PROXY_DOCKERFILE}
+    deploy:
+      resources:
+        limits:
+          memory: 65M
     restart: unless-stopped
     ports:
       - "${ENVOY_PORT}:${ENVOY_PORT}"
@@ -321,10 +358,6 @@ services:
       - FLAGD_PORT
       - FLAGD_UI_HOST
       - FLAGD_UI_PORT
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
     depends_on:
       frontend:
         condition: service_started
@@ -345,6 +378,10 @@ services:
       dockerfile: ${IMAGE_PROVIDER_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-image-provider
+    deploy:
+      resources:
+        limits:
+          memory: 120M
     restart: unless-stopped
     ports:
       - "${IMAGE_PROVIDER_PORT}"
@@ -368,8 +405,11 @@ services:
       dockerfile: ${LOAD_GENERATOR_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-load-generator
+    deploy:
+      resources:
+        limits:
+          memory: 1500M
     restart: unless-stopped
-    command: ["--processes", "4"]
     ports:
       - "${LOCUST_WEB_PORT}"
     environment:
@@ -403,6 +443,10 @@ services:
       dockerfile: ${PAYMENT_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-payment
+    deploy:
+      resources:
+        limits:
+          memory: 120M
     restart: unless-stopped
     ports:
       - "${PAYMENT_PORT}"
@@ -433,6 +477,10 @@ services:
       dockerfile: ${PRODUCT_CATALOG_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog
+    deploy:
+      resources:
+        limits:
+          memory: 20M
     restart: unless-stopped
     ports:
       - "${PRODUCT_CATALOG_PORT}"
@@ -441,6 +489,7 @@ services:
       - PRODUCT_CATALOG_RELOAD_INTERVAL
       - FLAGD_HOST
       - FLAGD_PORT
+      - GOMEMLIMIT=16MiB
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
@@ -463,6 +512,10 @@ services:
       dockerfile: ${QUOTE_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-quote
+    deploy:
+      resources:
+        limits:
+          memory: 40M
     restart: unless-stopped
     ports:
       - "${QUOTE_PORT}"
@@ -487,6 +540,10 @@ services:
       dockerfile: ${RECOMMENDATION_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-recommendation
+    deploy:
+      resources:
+        limits:
+          memory: 500M               # This is high to enable supporting the recommendationCache feature flag use case
     restart: unless-stopped
     ports:
       - "${RECOMMENDATION_PORT}"
@@ -519,6 +576,10 @@ services:
       dockerfile: ${SHIPPING_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-shipping
+    deploy:
+      resources:
+        limits:
+          memory: 20M
     restart: unless-stopped
     ports:
       - "${SHIPPING_PORT}"
@@ -540,10 +601,15 @@ services:
   flagd:
     image: ${FLAGD_IMAGE}
     container_name: flagd
+    deploy:
+      resources:
+        limits:
+          memory: 75M
     restart: unless-stopped
     environment:
       - FLAGD_OTEL_COLLECTOR_URI=${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
       - FLAGD_METRICS_EXPORTER=otel
+      - GOMEMLIMIT=60MiB
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=flagd
     command: [
@@ -566,6 +632,10 @@ services:
     build:
       context: ./
       dockerfile: ${FLAGD_UI_DOCKERFILE}
+    deploy:
+      resources:
+        limits:
+          memory: 100M
     restart: unless-stopped
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
@@ -593,6 +663,10 @@ services:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-kafka
       args:
         OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
+    deploy:
+      resources:
+        limits:
+          memory: 620M
     restart: unless-stopped
     environment:
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
@@ -616,6 +690,10 @@ services:
     image: ${VALKEY_IMAGE}
     container_name: valkey-cart
     user: valkey
+    deploy:
+      resources:
+        limits:
+          memory: 20M
     restart: unless-stopped
     ports:
       - "${VALKEY_PORT}"
@@ -629,6 +707,10 @@ services:
   grafana:
     image: ${GRAFANA_IMAGE}
     container_name: grafana
+    deploy:
+      resources:
+        limits:
+          memory: 120M
     restart: unless-stopped
     environment:
       - "GF_INSTALL_PLUGINS=grafana-clickhouse-datasource"
@@ -659,6 +741,7 @@ services:
       OTEL_COLLECTOR_HOST: ${OTEL_COLLECTOR_HOST}
       OTEL_COLLECTOR_PORT_GRPC: ${OTEL_COLLECTOR_PORT_GRPC}
       OTEL_COLLECTOR_PORT_HTTP: ${OTEL_COLLECTOR_PORT_HTTP}
+      GOMEMLIMIT: 160MiB
     ports:
       - '13133:13133' # health_check extension
       - '24225:24225' # fluentd receiver
@@ -667,6 +750,10 @@ services:
       - '8888:8888' # metrics extension
     restart: always
     logging: *logging
+    deploy:
+      resources:
+        limits:
+          memory: 200M
     command: [ "--config=/etc/otelcol-contrib/config.yaml", "--config=/etc/otelcol-contrib/config-extras.yaml" ]
     user: 0:0
     volumes:
@@ -716,7 +803,7 @@ services:
       - .volumes/ch_logs:/var/log/clickhouse-server
     restart: on-failure
     healthcheck:
-      test: wget --no-verbose --tries=1 -O /dev/null http://127.0.0.1:8123/ping || exit 1
+      test: wget --no-verbose --tries=1 http://127.0.0.1:8123/ping || exit 1
       interval: 10s
       timeout: 10s
       retries: 3

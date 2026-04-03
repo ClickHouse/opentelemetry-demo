@@ -734,7 +734,9 @@ services:
     image: ${OTEL_COLLECTOR_HYPERDX_IMAGE_NAME}:${IMAGE_HYPERDX_VERSION}
     container_name: otel-collector
     environment:
-      CLICKHOUSE_SERVER_ENDPOINT: clickhouse:9000
+      CLICKHOUSE_ENDPOINT: tcp://clickhouse:9000
+      CLICKHOUSE_USER: default
+      HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: hyperdx
       HYPERDX_LOG_LEVEL: ${HYPERDX_LOG_LEVEL}
       ENVOY_PORT: ${ENVOY_PORT}
       HOST_FILESYSTEM: ${HOST_FILESYSTEM}
@@ -803,7 +805,7 @@ services:
       - .volumes/ch_logs:/var/log/clickhouse-server
     restart: on-failure
     healthcheck:
-      test: wget --no-verbose --tries=1 http://127.0.0.1:8123/ping || exit 1
+      test: wget --no-verbose --tries=1 -O /dev/null http://127.0.0.1:8123/ping || exit 1
       interval: 10s
       timeout: 10s
       retries: 3

@@ -23,6 +23,7 @@ from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import SpanProcessor
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -69,18 +70,12 @@ trace.set_tracer_provider(tracer_provider)
 # threading.local so each simulated user gets its own isolated store.
 _session_store = threading.local()
 
-class _SessionAttributeSpanProcessor:
+class _SessionAttributeSpanProcessor(SpanProcessor):
     """Stamps session attributes onto every span without requiring baggage propagation."""
     def on_start(self, span, parent_context=None):
         attrs = getattr(_session_store, 'session_attrs', None)
         if attrs:
             span.set_attributes(attrs)
-    def on_end(self, span):
-        pass
-    def shutdown(self):
-        pass
-    def force_flush(self, timeout_millis=30000):
-        return True
 
 tracer_provider.add_span_processor(_SessionAttributeSpanProcessor())
 tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))

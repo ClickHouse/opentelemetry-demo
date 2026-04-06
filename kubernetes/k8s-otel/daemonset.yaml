@@ -48,6 +48,16 @@ extraEnvs:
  
 config:
   receivers:
+    # Only collect logs from services which are not already sending logs via OTel SDKs.
+    filelog:
+      include:
+        - /var/log/pods/otel-demo_email-*/**/*.log
+        - /var/log/pods/otel-demo_shipping-*/**/*.log
+        - /var/log/pods/otel-demo_valkey-cart-*/**/*.log
+        - /var/log/pods/otel-demo_product-catalog-*/**/*.log
+        - /var/log/pods/otel-demo_frontend-proxy-*/**/*.log
+        - /var/log/pods/otel-demo_artillery-loadgen-*/**/*.log
+        - /var/log/pods/otel-demo_checkout-*/**/*.log
     # Configures additional kubelet metrics
     kubeletstats:
       collection_interval: 20s
@@ -78,6 +88,15 @@ config:
         container.uptime:
           enabled: true
  
+  processors:
+    # Set service.name from k8s.deployment.name so filelog-collected logs
+    # have the correct service name instead of the Helm release name.
+    transform:
+      log_statements:
+        - context: resource
+          statements:
+            - set(attributes["service.name"], attributes["k8s.deployment.name"]) where attributes["k8s.deployment.name"] != nil
+
   exporters:
     otlphttp:
       endpoint: 'http://my-clickstack-otel-collector:4318'
@@ -88,6 +107,8 @@ config:
   service:
     pipelines:
       logs:
+        processors:
+          - transform
         exporters:
           - otlphttp
       metrics:

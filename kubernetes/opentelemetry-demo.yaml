@@ -1765,6 +1765,8 @@ spec:
               value: cumulative
             - name: FLAGD_METRICS_EXPORTER
               value: otel
+            - name: FLAGD_TRACING_EXPORTER
+              value: otel
             - name: FLAGD_OTEL_COLLECTOR_URI
               value: $(OTEL_COLLECTOR_NAME):4317
             - name: POD_NAME
@@ -1793,6 +1795,8 @@ spec:
                   name: hyperdx-secret
                   key: HYPERDX_API_KEY
                   optional: true
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: "authorization=$(HYPERDX_API_KEY)"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=2.0.2,k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.deployment.name=$(DEPLOYMENT_NAME)
           resources:

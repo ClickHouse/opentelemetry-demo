@@ -1140,6 +1140,8 @@ spec:
               value: kafka:9092
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: OTEL_DOTNET_AUTO_METRICS_INSTRUMENTATION_ENABLED
+              value: "true"
             - name: HYPERDX_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -1444,6 +1446,8 @@ spec:
               value: my-clickstack-otel-collector
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: cumulative
+            - name: OTEL_GO_X_DEPRECATED_RUNTIME_METRICS
+              value: "false"
             - name: CHECKOUT_PORT
               value: "8080"
             - name: CART_ADDR

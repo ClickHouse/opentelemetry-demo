@@ -22,6 +22,7 @@ receivers:
       - endpoint: http://frontend-proxy:${env:ENVOY_PORT}
   docker_stats:
     endpoint: unix:///var/run/docker.sock
+    api_version: "1.41"
   redis:
     endpoint: "valkey-cart:6379"
     username: "valkey"
@@ -98,6 +99,148 @@ processors:
           - merge_maps(log.attributes, ParseJSON(log.cache["0"]), "upsert") where IsMap(log.cache) and IsString(log.cache["0"]) and IsMatch(log.cache["0"], "^{\\s*\\{.*\\}\\s*}$")
           - flatten(log.attributes) where IsMap(log.cache)
           - merge_maps(log.attributes, log.body, "upsert") where IsMap(log.body)
+      # === Bulk enrichment: infrastructure and platform attributes on every log ===
+      - context: log
+        error_mode: ignore
+        statements:
+          # Network and connectivity
+          - set(attributes["net.transport"], "ip_tcp")
+          - set(attributes["net.protocol.name"], "http")
+          - set(attributes["net.protocol.version"], "1.1")
+          - set(attributes["network.carrier.name"], "internal-vpc")
+          - set(attributes["network.connection.type"], "wired")
+          - set(attributes["network.connection.subtype"], "ethernet")
+
+          # Cloud and infrastructure
+          - set(attributes["cloud.provider"], "aws")
+          - set(attributes["cloud.region"], "us-east-1")
+          - set(attributes["cloud.availability_zone"], "us-east-1a")
+          - set(attributes["cloud.account.id"], "123456789012")
+          - set(attributes["cloud.platform"], "aws_ecs")
+          - set(attributes["cloud.resource_id"], "arn:aws:ecs:us-east-1:123456789012:task/otel-demo")
+
+          # Kubernetes context
+          - set(attributes["k8s.cluster.name"], "otel-demo-prod-useast1")
+          - set(attributes["k8s.cluster.uid"], "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+          - set(attributes["k8s.namespace.name"], "opentelemetry-demo")
+          - set(attributes["k8s.node.name"], "ip-10-0-42-217.ec2.internal")
+          - set(attributes["k8s.node.uid"], "node-uid-98765")
+          - set(attributes["k8s.pod.uid"], "pod-uid-67890-abcdef")
+          - set(attributes["k8s.replicaset.name"], "demo-replicaset-v3")
+          - set(attributes["k8s.deployment.uid"], "deploy-uid-22222")
+          - set(attributes["k8s.container.restart_count"], 0)
+          - set(attributes["k8s.pod.labels.app"], "otel-demo")
+          - set(attributes["k8s.pod.labels.version"], "v1.12.0")
+          - set(attributes["k8s.pod.labels.team"], "platform-engineering")
+
+          # Service mesh
+          - set(attributes["mesh.name"], "istio-otel-demo")
+          - set(attributes["mesh.version"], "1.20.3")
+          - set(attributes["mesh.mtls.enabled"], "true")
+
+          # Deployment and release
+          - set(attributes["deployment.environment"], "staging")
+          - set(attributes["deployment.id"], "deploy-2024-03-15-001")
+          - set(attributes["deployment.strategy"], "rolling-update")
+          - set(attributes["release.version"], "1.12.0")
+          - set(attributes["release.channel"], "stable")
+          - set(attributes["release.commit_sha"], "abc123def456789")
+          - set(attributes["release.branch"], "main")
+          - set(attributes["release.build_number"], "4521")
+
+          # Organization and ownership
+          - set(attributes["organization.name"], "AcmeCorp")
+          - set(attributes["organization.unit"], "retail-platform")
+          - set(attributes["organization.cost_center"], "CC-4521")
+          - set(attributes["team.name"], "platform-engineering")
+          - set(attributes["team.slack_channel"], "#platform-eng-alerts")
+          - set(attributes["team.pagerduty_service"], "platform-eng-oncall")
+          - set(attributes["service.owner"], "platform-engineering")
+          - set(attributes["service.tier"], "tier-1")
+          - set(attributes["service.sla.target_availability"], "99.95")
+
+          # Security context
+          - set(attributes["security.protocol"], "TLSv1.3")
+          - set(attributes["security.cipher_suite"], "TLS_AES_256_GCM_SHA384")
+          - set(attributes["security.waf.enabled"], "true")
+          - set(attributes["security.waf.rule_set"], "owasp-crs-3.3")
+          - set(attributes["security.compliance.pci_dss"], "4.0")
+          - set(attributes["security.compliance.soc2"], "type-ii")
+          - set(attributes["security.compliance.gdpr"], "compliant")
+
+          # Observability pipeline metadata
+          - set(attributes["telemetry.sdk.name"], "opentelemetry")
+          - set(attributes["telemetry.sdk.version"], "1.35.0")
+          - set(attributes["telemetry.distro.name"], "otel-demo-distro")
+          - set(attributes["otel.collector.name"], "otel-contrib-collector")
+          - set(attributes["otel.collector.version"], "0.120.0")
+          - set(attributes["otel.exporter.name"], "clickhouse")
+          - set(attributes["otel.pipeline.name"], "logs-default")
+
+          # Feature management
+          - set(attributes["feature.management.provider"], "flagd")
+          - set(attributes["feature.management.version"], "0.12.1")
+
+          # Cost allocation
+          - set(attributes["billing.cost_center"], "CC-4521")
+          - set(attributes["billing.project_code"], "PROJ-OTEL-DEMO")
+          - set(attributes["billing.environment_class"], "non-production")
+          - set(attributes["billing.data_classification"], "internal")
+          - set(attributes["billing.retention_tier"], "standard-30d")
+
+          # Scaling context
+          - set(attributes["scaling.policy"], "target-tracking")
+          - set(attributes["scaling.min_replicas"], "2")
+          - set(attributes["scaling.max_replicas"], "20")
+          - set(attributes["scaling.current_replicas"], "4")
+
+          # DNS and service discovery
+          - set(attributes["dns.resolver"], "coredns")
+          - set(attributes["service_discovery.provider"], "kubernetes")
+          - set(attributes["load_balancer.algorithm"], "round-robin")
+
+          # CI/CD provenance
+          - set(attributes["cicd.pipeline.name"], "otel-demo-deploy")
+          - set(attributes["cicd.pipeline.run_id"], "run-78234")
+          - set(attributes["cicd.source.repo"], "github.com/opentelemetry/demo")
+          - set(attributes["cicd.artifact.registry"], "ghcr.io/opentelemetry")
+          - set(attributes["cicd.artifact.digest"], "sha256:abcdef123456")
+
+          # Log pipeline specific
+          - set(attributes["log.pipeline.name"], "default")
+          - set(attributes["log.pipeline.stage"], "transform")
+          - set(attributes["log.ingestion.source"], "otlp-grpc")
+          - set(attributes["log.ingestion.format"], "structured")
+          - set(attributes["log.retention.days"], "30")
+          - set(attributes["log.storage.backend"], "clickhouse")
+          - set(attributes["log.index.strategy"], "timestamp-service")
+          - set(attributes["log.compression"], "zstd")
+          - set(attributes["log.partition.key"], "service-daily")
+          - set(attributes["log.sampling.strategy"], "always-on")
+          - set(attributes["log.sampling.rate"], "1.0")
+          - set(attributes["log.parsing.applied"], "true")
+          - set(attributes["log.enrichment.applied"], "true")
+          - set(attributes["log.dedup.enabled"], "false")
+          - set(attributes["log.pii.scanning"], "enabled")
+          - set(attributes["log.pii.fields_redacted"], "0")
+
+      # === Resource enrichment for logs ===
+      - context: resource
+        error_mode: ignore
+        statements:
+          - set(attributes["platform.region"], "us-east-1")
+          - set(attributes["platform.cell"], "cell-3")
+          - set(attributes["platform.shard"], "shard-7")
+          - set(attributes["platform.partition"], "partition-12")
+          - set(attributes["host.cpu.model.name"], "Intel Xeon Platinum 8375C")
+          - set(attributes["host.cpu.count"], "8")
+          - set(attributes["host.memory.total_gb"], "32")
+          - set(attributes["host.disk.type"], "nvme-ssd")
+          - set(attributes["container.cpu.limit"], "4000m")
+          - set(attributes["container.memory.limit_mb"], "8192")
+          - set(attributes["process.owner"], "appuser")
+          - set(attributes["process.group"], "appgroup")
+
       - context: log
         error_mode: ignore
         conditions:
@@ -132,28 +275,180 @@ processors:
           # could be removed when https://github.com/vercel/next.js/pull/64852 is fixed upstream
           - replace_pattern(name, "\\?.*", "")
           - replace_match(name, "GET /api/products/*", "GET /api/products/{productId}")
+
+          # === Bulk enrichment: infrastructure and platform attributes on every span ===
+          # Network and connectivity
+          - set(attributes["net.transport"], "ip_tcp")
+          - set(attributes["net.protocol.name"], "http")
+          - set(attributes["net.protocol.version"], "1.1")
+          - set(attributes["net.sock.family"], "inet")
+          - set(attributes["network.carrier.name"], "internal-vpc")
+          - set(attributes["network.carrier.mcc"], "310")
+          - set(attributes["network.carrier.mnc"], "410")
+          - set(attributes["network.connection.type"], "wired")
+          - set(attributes["network.connection.subtype"], "ethernet")
+          - set(attributes["network.io.direction"], "outbound")
+
+          # Cloud and infrastructure
+          - set(attributes["cloud.provider"], "aws")
+          - set(attributes["cloud.region"], "us-east-1")
+          - set(attributes["cloud.availability_zone"], "us-east-1a")
+          - set(attributes["cloud.account.id"], "123456789012")
+          - set(attributes["cloud.platform"], "aws_ecs")
+          - set(attributes["cloud.resource_id"], "arn:aws:ecs:us-east-1:123456789012:task/otel-demo")
+
+          # Kubernetes context
+          - set(attributes["k8s.cluster.name"], "otel-demo-prod-useast1")
+          - set(attributes["k8s.cluster.uid"], "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+          - set(attributes["k8s.namespace.name"], "opentelemetry-demo")
+          - set(attributes["k8s.node.name"], "ip-10-0-42-217.ec2.internal")
+          - set(attributes["k8s.node.uid"], "node-uid-98765")
+          - set(attributes["k8s.pod.uid"], "pod-uid-67890-abcdef")
+          - set(attributes["k8s.replicaset.name"], "demo-replicaset-v3")
+          - set(attributes["k8s.replicaset.uid"], "rs-uid-11111")
+          - set(attributes["k8s.deployment.uid"], "deploy-uid-22222")
+          - set(attributes["k8s.container.restart_count"], 0)
+          - set(attributes["k8s.pod.labels.app"], "otel-demo")
+          - set(attributes["k8s.pod.labels.version"], "v1.12.0")
+          - set(attributes["k8s.pod.labels.team"], "platform-engineering")
+          - set(attributes["k8s.pod.annotations.prometheus.io/scrape"], "true")
+          - set(attributes["k8s.pod.annotations.sidecar.istio.io/inject"], "true")
+
+          # Service mesh
+          - set(attributes["mesh.name"], "istio-otel-demo")
+          - set(attributes["mesh.version"], "1.20.3")
+          - set(attributes["mesh.proxy.version"], "envoy-1.28")
+          - set(attributes["mesh.mtls.enabled"], "true")
+          - set(attributes["mesh.sidecar.injected"], "true")
+
+          # Deployment and release
+          - set(attributes["deployment.environment"], "staging")
+          - set(attributes["deployment.id"], "deploy-2024-03-15-001")
+          - set(attributes["deployment.strategy"], "rolling-update")
+          - set(attributes["deployment.rollout.status"], "complete")
+          - set(attributes["release.version"], "1.12.0")
+          - set(attributes["release.channel"], "stable")
+          - set(attributes["release.commit_sha"], "abc123def456789")
+          - set(attributes["release.branch"], "main")
+          - set(attributes["release.build_number"], "4521")
+          - set(attributes["release.build_timestamp"], "2024-03-15T10:30:00Z")
+
+          # Organization and ownership
+          - set(attributes["organization.name"], "AcmeCorp")
+          - set(attributes["organization.unit"], "retail-platform")
+          - set(attributes["organization.cost_center"], "CC-4521")
+          - set(attributes["team.name"], "platform-engineering")
+          - set(attributes["team.slack_channel"], "#platform-eng-alerts")
+          - set(attributes["team.pagerduty_service"], "platform-eng-oncall")
+          - set(attributes["team.manager"], "jsmith")
+          - set(attributes["service.owner"], "platform-engineering")
+          - set(attributes["service.tier"], "tier-1")
+          - set(attributes["service.sla.target_availability"], "99.95")
+          - set(attributes["service.sla.target_latency_p99_ms"], "500")
+
+          # Security context
+          - set(attributes["security.protocol"], "TLSv1.3")
+          - set(attributes["security.cipher_suite"], "TLS_AES_256_GCM_SHA384")
+          - set(attributes["security.certificate.issuer"], "Let's Encrypt Authority X3")
+          - set(attributes["security.certificate.expiry"], "2024-06-15T00:00:00Z")
+          - set(attributes["security.certificate.serial"], "04:B3:A2:F1:C0:D9:E8:76")
+          - set(attributes["security.waf.enabled"], "true")
+          - set(attributes["security.waf.rule_set"], "owasp-crs-3.3")
+          - set(attributes["security.ddos.protection"], "cloudflare-enterprise")
+          - set(attributes["security.scan.last_completed"], "2024-03-14T06:00:00Z")
+          - set(attributes["security.compliance.pci_dss"], "4.0")
+          - set(attributes["security.compliance.soc2"], "type-ii")
+          - set(attributes["security.compliance.gdpr"], "compliant")
+          - set(attributes["security.compliance.hipaa"], "not-applicable")
+
+          # Observability pipeline metadata
+          - set(attributes["telemetry.sdk.name"], "opentelemetry")
+          - set(attributes["telemetry.sdk.version"], "1.35.0")
+          - set(attributes["telemetry.auto.version"], "2.13.0")
+          - set(attributes["telemetry.distro.name"], "otel-demo-distro")
+          - set(attributes["telemetry.distro.version"], "1.4.0")
+          - set(attributes["otel.collector.name"], "otel-contrib-collector")
+          - set(attributes["otel.collector.version"], "0.120.0")
+          - set(attributes["otel.exporter.name"], "clickhouse")
+          - set(attributes["otel.pipeline.name"], "traces-default")
+          - set(attributes["otel.sampling.strategy"], "parent-based-always-on")
+          - set(attributes["otel.sampling.rate"], "1.0")
+
+          # Feature management
+          - set(attributes["feature.management.provider"], "flagd")
+          - set(attributes["feature.management.version"], "0.12.1")
+          - set(attributes["feature.management.sync_interval_sec"], "10")
+          - set(attributes["feature.management.cache_enabled"], "true")
+
+          # Cost allocation and billing
+          - set(attributes["billing.cost_center"], "CC-4521")
+          - set(attributes["billing.project_code"], "PROJ-OTEL-DEMO")
+          - set(attributes["billing.environment_class"], "non-production")
+          - set(attributes["billing.data_classification"], "internal")
+          - set(attributes["billing.retention_tier"], "standard-30d")
+
+          # Capacity and scaling
+          - set(attributes["scaling.policy"], "target-tracking")
+          - set(attributes["scaling.min_replicas"], "2")
+          - set(attributes["scaling.max_replicas"], "20")
+          - set(attributes["scaling.current_replicas"], "4")
+          - set(attributes["scaling.target_cpu_pct"], "70")
+          - set(attributes["scaling.cooldown_sec"], "300")
+
+          # DNS and service discovery
+          - set(attributes["dns.resolver"], "coredns")
+          - set(attributes["dns.cache.enabled"], "true")
+          - set(attributes["service_discovery.provider"], "kubernetes")
+          - set(attributes["service_discovery.refresh_interval_sec"], "30")
+          - set(attributes["load_balancer.algorithm"], "round-robin")
+          - set(attributes["load_balancer.health_check_interval_sec"], "10")
+
+          # CI/CD provenance
+          - set(attributes["cicd.pipeline.name"], "otel-demo-deploy")
+          - set(attributes["cicd.pipeline.run_id"], "run-78234")
+          - set(attributes["cicd.pipeline.stage"], "deploy-staging")
+          - set(attributes["cicd.source.repo"], "github.com/opentelemetry/demo")
+          - set(attributes["cicd.source.trigger"], "push-to-main")
+          - set(attributes["cicd.artifact.registry"], "ghcr.io/opentelemetry")
+          - set(attributes["cicd.artifact.digest"], "sha256:abcdef123456")
+
+      # === Enrichment for resource context on spans ===
+      - context: resource
+        statements:
+          - set(attributes["platform.region"], "us-east-1")
+          - set(attributes["platform.cell"], "cell-3")
+          - set(attributes["platform.shard"], "shard-7")
+          - set(attributes["platform.partition"], "partition-12")
+          - set(attributes["platform.rack"], "rack-42a")
+          - set(attributes["platform.chassis"], "chassis-c7")
+          - set(attributes["host.cpu.model.name"], "Intel Xeon Platinum 8375C")
+          - set(attributes["host.cpu.count"], "8")
+          - set(attributes["host.memory.total_gb"], "32")
+          - set(attributes["host.disk.type"], "nvme-ssd")
+          - set(attributes["host.disk.total_gb"], "500")
+          - set(attributes["host.network.bandwidth_gbps"], "25")
+          - set(attributes["container.cpu.limit"], "4000m")
+          - set(attributes["container.memory.limit_mb"], "8192")
+          - set(attributes["container.ephemeral_storage_limit_gb"], "50")
+          - set(attributes["process.owner"], "appuser")
+          - set(attributes["process.group"], "appgroup")
+          - set(attributes["process.nice"], "0")
     
 service:
   pipelines:
     metrics:
       receivers: [hostmetrics, docker_stats, httpcheck/frontend-proxy, otlp, prometheus, redis]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse, file]
+      exporters: [clickhouse]
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [clickhouse, file]
+      processors: [memory_limiter, transform, batch]
+      exporters: [clickhouse]
     logs/out-default:
       receivers: [routing/logs]
       processors: [memory_limiter, transform, batch]
-      exporters: [clickhouse, file]
+      exporters: [clickhouse]
     logs/out-rrweb:
       receivers: [routing/logs]
       processors: [memory_limiter, batch]
-      exporters: [clickhouse/rrweb, file]
-exporters:
-  file:
-    path: /data/sample.json
-    rotation:
-      max_megabytes: 10000
-      localtime: true
+      exporters: [clickhouse/rrweb]

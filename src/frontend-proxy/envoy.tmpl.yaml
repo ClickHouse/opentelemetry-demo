@@ -25,6 +25,9 @@ static_resources:
                         envoy_grpc:
                           cluster_name: opentelemetry_collector_grpc
                         timeout: 0.250s
+                        initial_metadata:
+                          - key: "authorization"
+                            value: "${HYPERDX_API_KEY}"
                       service_name: ${OTEL_SERVICE_NAME}
                       resource_detectors:
                         - name: envoy.tracers.opentelemetry.resource_detectors.environment
@@ -72,6 +75,9 @@ static_resources:
                         grpc_service:
                           envoy_grpc:
                             cluster_name: opentelemetry_collector_grpc
+                          initial_metadata:
+                            - key: "authorization"
+                              value: "${HYPERDX_API_KEY}"
                         transport_api_version: "V3"
                       body:
                         # yamllint disable-line rule:line-length

@@ -99,6 +99,9 @@ exporters:
 
 processors:
   batch:
+    send_batch_size: 10000
+      send_batch_max_size: 20000
+        timeout: 5s
   memory_limiter:
     check_interval: 5s
     limit_percentage: 80

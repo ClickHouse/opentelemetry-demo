@@ -37,6 +37,14 @@ helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
 helm repo update
 ```
 
+### Install the ClickStack operators
+
+Install the ClickStack operators:
+
+```
+helm install clickstack-operators clickstack/clickstack-operators -n otel-demo
+```
+
 ### All in one
 
 To deploy the ClickStack with ClickHouse included:
@@ -59,12 +67,17 @@ export CLICKHOUSE_PASSWORD=<CLICKHOUSE_PASSWORD>
 export CLICKHOUSE_DATABASE=<CLICKHOUSE_DATABASE>
 
 helm install my-clickstack clickstack/clickstack --set global.storageClassName="standard-rwo" \
-  -n otel-demo --set clickhouse.enabled=false \
-  --set clickhouse.persistence.enabled=false \
-  --set otel.clickhouseEndpoint=${CLICKHOUSE_URL} \
-  --set clickhouse.config.users.otelUserName=${CLICKHOUSE_USER} \
-  --set clickhouse.config.users.otelUserPassword=${CLICKHOUSE_PASSWORD} \
-  --set otel.clickhouseDatabase=${CLICKHOUSE_DATABASE}
+  -n otel-demo \
+  --set clickhouse.enabled=false \
+  --set hyperdx.config.CLICKHOUSE_USER=${CLICKHOUSE_USER} \
+  --set hyperdx.config.CLICKHOUSE_ENDPOINT=${CLICKHOUSE_URL} \
+  --set hyperdx.config.CLICKHOUSE_SERVER_ENDPOINT=${CLICKHOUSE_URL} \
+  --set hyperdx.secrets.CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD} \
+  --set hyperdx.secrets.CLICKHOUSE_APP_PASSWORD=${CLICKHOUSE_PASSWORD} \
+  --set hyperdx.useExistingConfigSecret.useExistingConfigSecret=true \
+  --set hyperdx.useExistingConfigSecret.existingConfigSecret="clickhouse-cloud-config" \
+  --set hyperdx.useExistingConfigSecret.existingConfigConnectionsKey="connections.json" \
+  --set hyperdx.useExistingConfigSecret.existingConfigSourcesKey="sources.json"
 ```
 
 ### Access HyperDX UI
